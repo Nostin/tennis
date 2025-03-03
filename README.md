@@ -27,6 +27,8 @@ You should see 'tennis' in the list of databases.
 
 It helps to have a Database GUI to pore through the records.  I like Beekeeper Studio.  It's free. https://www.beekeeperstudio.io/ 
 
+![Beekeeper Studio connection details](img/BeeKeeperStudioConn.png)
+
 ## Python
 
 Install Python: https://www.python.org/downloads/
