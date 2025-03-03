@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, text
 # -------------------------
 # CONFIGURATION
 # -------------------------
-CSV_FILE = r"../Raw Spreadsheet Data/TA_WTA_2015_2024.csv"
+CSV_FILE = r"../spreadsheet_raw/TA_WTA_2015_2024.csv"
 DB_NAME = "tennis"
 DB_USER = "seanthompson"  # Change this if you're using a different user
 DB_PASS = ""  # If you have a PostgreSQL password, set it here
@@ -69,10 +69,77 @@ print("Connecting to the database...")
 engine = create_engine(f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
 
 # -------------------------
-# INSERT DATA INTO DATABASE (REPLACE TABLE)
+# CREATE TABLE WITH PRIMARY KEY
 # -------------------------
-print(f"Inserting data into '{TABLE_NAME}' (replacing existing table)...")
-df.to_sql(TABLE_NAME, engine, if_exists="replace", index=False)
+create_table_query = f"""
+DROP TABLE IF EXISTS {TABLE_NAME};
+CREATE TABLE {TABLE_NAME} (
+    "MatchId" SERIAL PRIMARY KEY,
+    "tourney_id" TEXT,
+    "tourney_name" TEXT,
+    "surface" TEXT,
+    "draw_size" INT,
+    "tourney_level" TEXT,
+    "tourney_date" DATE,
+    "match_num" INT,
+    "winner_id" INT,
+    "winner_seed" TEXT,
+    "winner_entry" TEXT,
+    "winner_name" TEXT,
+    "winner_hand" TEXT,
+    "winner_ht" INT,
+    "winner_ioc" TEXT,
+    "winner_age" FLOAT,
+    "loser_id" INT,
+    "loser_seed" TEXT,
+    "loser_entry" TEXT,
+    "loser_name" TEXT,
+    "loser_hand" TEXT,
+    "loser_ht" INT,
+    "loser_ioc" TEXT,
+    "loser_age" FLOAT,
+    "score" TEXT,
+    "best_of" INT,
+    "round" TEXT,
+    "minutes" INT,
+    "w_ace" INT,
+    "w_df" INT,
+    "w_svpt" INT,
+    "w_1stIn" INT,
+    "w_1stWon" INT,
+    "w_2ndWon" INT,
+    "w_SvGms" INT,
+    "w_bpSaved" INT,
+    "w_bpFaced" INT,
+    "l_ace" INT,
+    "l_df" INT,
+    "l_svpt" INT,
+    "l_1stIn" INT,
+    "l_1stWon" INT,
+    "l_2ndWon" INT,
+    "l_SvGms" INT,
+    "l_bpSaved" INT,
+    "l_bpFaced" INT,
+    "winner_rank" INT,
+    "winner_rank_points" INT,
+    "loser_rank" INT,
+    "loser_rank_points" INT,
+    "Gender" TEXT
+);
+"""
+
+print(f"Creating or replacing table '{TABLE_NAME}' with MatchId...")
+with engine.connect() as connection:
+    connection.execute(text(create_table_query))
+    connection.commit()  # Ensure table creation is committed
+    print(f"Table '{TABLE_NAME}' created successfully!")
+
+# -------------------------
+# INSERT DATA INTO DATABASE
+# -------------------------
+print(f"Inserting data into '{TABLE_NAME}'...")
+# Insert data without MatchId (SERIAL will auto-increment)
+df.to_sql(TABLE_NAME, engine, if_exists="append", index=False)
 print(f"Data successfully inserted into '{TABLE_NAME}'!")
 
 # -------------------------
@@ -83,3 +150,7 @@ with engine.connect() as connection:
     result = connection.execute(text(f"SELECT COUNT(*) FROM {TABLE_NAME}"))
     count = result.scalar()
     print(f"Total rows in '{TABLE_NAME}' table: {count}")
+
+    # Verify MatchId
+    sample = connection.execute(text(f"SELECT \"MatchId\" FROM {TABLE_NAME} LIMIT 5")).fetchall()
+    print("Sample MatchId values:", sample)

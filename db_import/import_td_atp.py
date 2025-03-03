@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, text
 # -------------------------
 # CONFIGURATION
 # -------------------------
-CSV_FILE = r"../Raw Spreadsheet Data/TD_ATP_2015_2024.csv"
+CSV_FILE = r"../spreadsheet_raw/TD_ATP_2015_2024.csv"
 DB_NAME = "tennis"
 DB_USER = "seanthompson"  # Change this if you're using a different user
 DB_PASS = ""  # If you have a PostgreSQL password, set it here
@@ -34,6 +34,13 @@ except ValueError as e:
 except Exception as e:
     print(f"Error loading data: {e}")
     exit(1)
+
+# -------------------------
+# FIX DATA TYPES
+# -------------------------
+print("Converting numeric columns to proper format...")
+for col in ["MaxW", "MaxL", "AvgW", "AvgL"]:
+    df[col] = pd.to_numeric(df[col], errors="coerce")  # Convert to float, replace bad values with NaN
 
 # Remove duplicates based on key match identifiers
 print("Checking for duplicates...")

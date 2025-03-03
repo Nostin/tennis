@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, text
 # -------------------------
 # CONFIGURATION
 # -------------------------
-CSV_FILE = r"../Raw Spreadsheet Data/TD_WTA_2015_2024.csv"
+CSV_FILE = r"../spreadsheet_raw/TD_WTA_2015_2024.csv"
 DB_NAME = "tennis"
 DB_USER = "seanthompson"  # Change this if you're using a different user
 DB_PASS = ""  # If you have a PostgreSQL password, set it here
@@ -34,6 +34,13 @@ except ValueError as e:
 except Exception as e:
     print(f"Error loading data: {e}")
     exit(1)
+
+# -------------------------
+# FIX DATA TYPES
+# -------------------------
+print("Converting numeric columns to proper format...")
+for col in ["MaxW", "MaxL", "AvgW", "AvgL"]:
+    df[col] = pd.to_numeric(df[col], errors="coerce")  # Convert to float, replace bad values with NaN
 
 # Remove duplicates based on key match identifiers
 print("Checking for duplicates...")
@@ -66,10 +73,57 @@ print("Connecting to the database...")
 engine = create_engine(f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
 
 # -------------------------
+# CREATE TABLE WITH PRIMARY KEY AND FOREIGN KEY
+# -------------------------
+create_table_query = f"""
+DROP TABLE IF EXISTS {TABLE_NAME};
+CREATE TABLE {TABLE_NAME} (
+    "MatchId" SERIAL PRIMARY KEY,
+    "WTA" INT,
+    "Location" TEXT,
+    "Tournament" TEXT,
+    "Date" DATE,
+    "Tier" TEXT,
+    "Court" TEXT,
+    "Surface" TEXT,
+    "Round" TEXT,
+    "Best of" INT,
+    "Winner" TEXT,
+    "Loser" TEXT,
+    "WRank" INT,
+    "LRank" INT,
+    "WPts" INT,
+    "LPts" INT,
+    "W1" INT,
+    "L1" INT,
+    "W2" INT,
+    "L2" INT,
+    "W3" INT,
+    "L3" INT,
+    "Wsets" INT,
+    "Lsets" INT,
+    "Comment" TEXT,
+    "MaxW" FLOAT,
+    "MaxL" FLOAT,
+    "AvgW" FLOAT,
+    "AvgL" FLOAT,
+    "Gender" TEXT,
+    "TA_Match_Id" INTEGER DEFAULT NULL
+);
+"""
+
+print(f"Creating or replacing table '{TABLE_NAME}' with MatchId and TA_Match_Id...")
+with engine.connect() as connection:
+    connection.execute(text(create_table_query))
+    connection.commit()  # Ensure table creation is committed
+    print(f"Table '{TABLE_NAME}' created successfully!")
+
+# -------------------------
 # INSERT DATA INTO DATABASE (REPLACE TABLE)
 # -------------------------
-print(f"Inserting data into '{TABLE_NAME}' (replacing existing table)...")
-df.to_sql(TABLE_NAME, engine, if_exists="replace", index=False)
+print(f"Inserting data into '{TABLE_NAME}'...")
+# Insert data without MatchId ( SERIAL will auto-increment )
+df.to_sql(TABLE_NAME, engine, if_exists="append", index=False)
 print(f"Data successfully inserted into '{TABLE_NAME}'!")
 
 # -------------------------
@@ -80,3 +134,7 @@ with engine.connect() as connection:
     result = connection.execute(text(f"SELECT COUNT(*) FROM {TABLE_NAME}"))
     count = result.scalar()
     print(f"Total rows in '{TABLE_NAME}' table: {count}")
+
+    # Verify MatchId and TA_Match_Id
+    sample = connection.execute(text(f"SELECT \"MatchId\", \"TA_Match_Id\" FROM {TABLE_NAME} LIMIT 5")).fetchall()
+    print("Sample MatchId and TA_Match_Id values:", sample)

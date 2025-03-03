@@ -82,7 +82,7 @@ df_exact_match = df_ta.merge(
     how="inner"
 )
 df_exact_match["date_diff"] = (df_exact_match["Date"] - df_exact_match["tourney_date"]).dt.days
-df_exact_match = df_exact_match[(df_exact_match["date_diff"] >= 0) & (df_exact_match["date_diff"] <= 16)]
+df_exact_match = df_exact_match[(df_exact_match["date_diff"] >= -1) & (df_exact_match["date_diff"] <= 16)]
 
 # Exclude matched records
 matched_td_ids = df_exact_match["MatchId_y"].unique()
