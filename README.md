@@ -5,23 +5,23 @@ Open Terminal
 
 Install brew if you don't have it:
 
-> /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 Install PostgreSQL locally
 
-> brew install postgresql
+    brew install postgresql
 
 Run the DB engine
 
-> brew services start postgresql
+    brew services start postgresql
 
 Create the tennis DB
 
-> createdb tennis
+    createdb tennis
 
 Run this:
 
-> psql -l
+    psql -l
 
 You should see 'tennis' in the list of databases.
 
@@ -33,21 +33,21 @@ Install Python: https://www.python.org/downloads/
 
 Then upgrade pip
 
-> python3 -m pip install --upgrade pip
+    python3 -m pip install --upgrade pip
 
 Install python libraries used in the scripts:
 
-> pip3 install pandas sqlalchemy psycopg2-binary
+    pip3 install pandas sqlalchemy psycopg2-binary
 
 Import data from the CSV files into the database.  Clone this repo, and go to the `db_import` directory in terminal
 
-> python3 import_td_atp.py
+    python3 import_td_atp.py
 
-> python3 import_ta_atp.py
+    python3 import_ta_atp.py
 
-> python3 import_td_wta.py
+    python3 import_td_wta.py
 
-> python3 import_ta_wta.py
+    python3 import_ta_wta.py
 
 ## What is happening
 
