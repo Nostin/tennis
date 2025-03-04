@@ -35,7 +35,13 @@ match_pairs = [
     ("2015-07-22", "Delbonis F.", "Dutra Silva R.", "2015-07-20", "Federico Delbonis", "Rogerio Dutra Silva"),
     ("2015-08-03", "Giraldo S.", "Dutra Silva R.", "2015-08-03", "Santiago Giraldo", "Rogerio Dutra Silva"),
     ("2016-02-01", "Carreno-Busta P.", "Dutra Silva R.", "2016-02-01", "Pablo Carreno Busta", "Rogerio Dutra Silva"),
-    ("2016-03-24", "Kuznetsov An.", "Dutra Silva R.", "2016-03-21", "Andrey Kuznetsov", "Rogerio Dutra Silva"),
+    ("2016-03-24", "Kuznetsov An.", "Dutra Silva R.", "2016-03-21", "Andrey Kuznetsov", "Rogerio Dutra Silva")
+
+    # ("20", "", "Dutra Silva R.", "20", "", "Rogerio Dutra Silva"),
+    # ("20", "", "Dutra Silva R.", "20", "", "Rogerio Dutra Silva"),
+    # ("20", "", "Dutra Silva R.", "20", "", "Rogerio Dutra Silva"),
+    # ("20", "", "Dutra Silva R.", "20", "", "Rogerio Dutra Silva"),
+    # ("20", "", "Dutra Silva R.", "20", "", "Rogerio Dutra Silva"),
     
     # Add more records here...
 ]
