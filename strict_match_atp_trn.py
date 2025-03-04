@@ -61,6 +61,10 @@ df_ta["loser_rank_points"] = pd.to_numeric(df_ta["loser_rank_points"], errors="c
 df_td["Date"] = pd.to_datetime(df_td["Date"], errors="coerce")
 df_ta["tourney_date"] = pd.to_datetime(df_ta["tourney_date"], errors="coerce")
 
+# Tournament name
+df_td["Tournament"] = df_td["Tournament"].str.strip().str.title()
+df_ta["tourney_name"] = df_ta["tourney_name"].str.strip().str.title()
+
 # -------------------------
 # EXACT MATCHING
 # -------------------------
@@ -69,8 +73,8 @@ print("Performing exact matching in DataFrames...")
 # Standard exact match
 df_exact_match = df_ta.merge(
     df_td,
-    left_on=["winner_rank", "loser_rank", "winner_rank_points", "loser_rank_points", "surface", "score_w1", "score_l1"],
-    right_on=["WRank", "LRank", "WPts", "LPts", "Surface", "W1", "L1"],
+    left_on=["winner_rank", "loser_rank", "winner_rank_points", "loser_rank_points", "surface", "score_w1", "score_l1", "tourney_name"],
+    right_on=["WRank", "LRank", "WPts", "LPts", "Surface", "W1", "L1", "Tournament"],
     how="inner"
 )
 df_exact_match["date_diff"] = (df_exact_match["Date"] - df_exact_match["tourney_date"]).dt.days

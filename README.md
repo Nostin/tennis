@@ -67,6 +67,7 @@ The ELO rating incorporates:
 - separate surface specific ratings which are blended with the player's overall rating using logarithmic weighting
 - rating decay due to inactivity
 - decay from last played match up until the date the ratings are generated
+- The ELO compounds over the full period - there's no rolling window
 
 
 

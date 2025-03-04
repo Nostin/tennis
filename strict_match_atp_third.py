@@ -26,7 +26,6 @@ with engine.connect() as connection:
     df_ta = pd.read_sql('SELECT * FROM ta_atp_2015_2024', connection)
 
 print(f"Loaded {len(df_td)} unmatched records from tennis-data.")
-print(f"Loaded {len(df_ta)} records from tennis-abstract.")
 
 # -------------------------
 # PREPARE DATA FOR MATCHING

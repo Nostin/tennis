@@ -22,10 +22,18 @@ engine = create_engine(f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{D
 # -------------------------
 print("Loading data from database...")
 with engine.connect() as connection:
-    df_td = pd.read_sql('SELECT * FROM td_atp_2015_2024 WHERE "TA_Match_Id" IS NULL', connection)
+    df_td = pd.read_sql("SELECT * FROM td_atp_2015_2024", connection)
     df_ta = pd.read_sql("SELECT * FROM ta_atp_2015_2024", connection)
 
-print(f"Loaded {len(df_td)} unmatched records from tennis-data.")
+print(f"Loaded {len(df_td)} records from tennis-data.")
+print(f"Loaded {len(df_ta)} records from tennis-abstract.")
+
+# Reset TA_Match_Id to NULL
+print("Resetting TA_Match_Id to NULL in td_atp_2015_2024...")
+with engine.connect() as connection:
+    connection.execute(text('UPDATE td_atp_2015_2024 SET "TA_Match_Id" = NULL;'))
+    connection.commit()
+print("✅ TA_Match_Id reset successfully!")
 
 # -------------------------
 # PREPARE DATA FOR MATCHING
@@ -61,6 +69,31 @@ df_ta["loser_rank_points"] = pd.to_numeric(df_ta["loser_rank_points"], errors="c
 df_td["Date"] = pd.to_datetime(df_td["Date"], errors="coerce")
 df_ta["tourney_date"] = pd.to_datetime(df_ta["tourney_date"], errors="coerce")
 
+# Tournament name
+df_td["Tournament"] = df_td["Tournament"].str.strip().str.title()
+df_ta["tourney_name"] = df_ta["tourney_name"].str.strip().str.title()
+
+# Extract last names from winner and loser names
+def extract_last_name(name):
+    if pd.isna(name):
+        return None
+    parts = name.split()
+    return parts[-1] if parts else None
+
+df_ta["winner_last"] = df_ta["winner_name"].apply(extract_last_name)
+df_ta["loser_last"] = df_ta["loser_name"].apply(extract_last_name)
+
+def extract_td_last_name(name):
+    if pd.isna(name):
+        return None
+    parts = name.split()
+    if len(parts) > 1:
+        return parts[0]
+    return name
+
+df_td["Winner_last"] = df_td["Winner"].apply(extract_td_last_name)
+df_td["Loser_last"] = df_td["Loser"].apply(extract_td_last_name)
+
 # -------------------------
 # EXACT MATCHING
 # -------------------------
@@ -69,8 +102,8 @@ print("Performing exact matching in DataFrames...")
 # Standard exact match
 df_exact_match = df_ta.merge(
     df_td,
-    left_on=["winner_rank", "loser_rank", "winner_rank_points", "loser_rank_points", "surface", "score_w1", "score_l1"],
-    right_on=["WRank", "LRank", "WPts", "LPts", "Surface", "W1", "L1"],
+    left_on=["winner_rank", "loser_rank", "winner_rank_points", "loser_rank_points", "surface", "score_w1", "score_l1", "winner_last", "loser_last", "tourney_name"],
+    right_on=["WRank", "LRank", "WPts", "LPts", "Surface", "W1", "L1", "Winner_last", "Loser_last", "Tournament"],
     how="inner"
 )
 df_exact_match["date_diff"] = (df_exact_match["Date"] - df_exact_match["tourney_date"]).dt.days
