@@ -31,7 +31,7 @@ It helps to have a Database GUI to pore through the records.  I like Beekeeper S
 
 ## Python
 
-Install Python: https://www.python.org/downloads/
+    brew install python3
 
 Then upgrade pip
 
@@ -41,15 +41,13 @@ Install python libraries used in the scripts:
 
     pip3 install pandas sqlalchemy psycopg2-binary
 
-Import data from the CSV files into the database.  Clone this repo, and go to the `db_import` directory in terminal
+Import data from the CSV files into the database.  Clone this repo, and run this command in the project home directory in terminal
 
-    python3 import_td_atp.py
+    python3 import_spreadsheet_data.py
 
-    python3 import_ta_atp.py
+Join the two data sources together
 
-    python3 import_td_wta.py
-
-    python3 import_ta_wta.py
+    python3 join_records_atp.py
 
 ## What is happening
 

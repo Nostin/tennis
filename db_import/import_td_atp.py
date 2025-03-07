@@ -1,15 +1,18 @@
-import pandas as pd
-from sqlalchemy import create_engine, text
+import sys
+import os
 
-# -------------------------
-# CONFIGURATION
-# -------------------------
-CSV_FILE = r"../spreadsheet_raw/TD_ATP_2015_2024.csv"
-DB_NAME = "tennis"
-DB_USER = "seanthompson"  # Change this if you're using a different user
-DB_PASS = ""  # If you have a PostgreSQL password, set it here
-DB_HOST = "localhost"
-DB_PORT = "5432"
+# Add the project root directory to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+import pandas as pd
+from tournament_ioc_map import atp_tournament_country_mapping 
+from sqlalchemy import text
+from db_connect import get_engine
+
+# Get the database engine
+engine = get_engine()
+
+CSV_FILE = r"spreadsheet_raw/TD_ATP_2015_2024.csv"
 TABLE_NAME = "td_atp_2015_2024"
 
 # -------------------------
@@ -62,15 +65,21 @@ except ValueError as e:
     print(f"Full error: {e}")
     exit(1)
 
-# Add Gender column
+# Add Gender and is_busted columns
 df["Gender"] = "male"
-print(f"Dates parsed and Gender column added. Final DataFrame rows: {len(df)}")
+df["is_busted"] = None
 
 # -------------------------
-# CONNECT TO POSTGRESQL
+# ADD TOURNAMENT IOC COLUMN
 # -------------------------
-print("Connecting to the database...")
-engine = create_engine(f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
+print("Mapping tournaments to their country (IOC codes)...")
+df["Tournament_IOC"] = df["Tournament"].map(atp_tournament_country_mapping).fillna("UNKNOWN")
+
+# Verify IOC mapping
+print("Tournament mapping sample:")
+print(df[["Tournament", "Tournament_IOC"]].drop_duplicates().head(10))
+
+print(f"Dates parsed and columns added. Final DataFrame rows: {len(df)}")
 
 # -------------------------
 # CREATE TABLE WITH PRIMARY KEY AND FOREIGN KEY
@@ -82,6 +91,7 @@ CREATE TABLE {TABLE_NAME} (
     "ATP" INT,
     "Location" TEXT,
     "Tournament" TEXT,
+    "Tournament_IOC" TEXT,
     "Date" DATE,
     "Series" TEXT,
     "Court" TEXT,
@@ -112,11 +122,12 @@ CREATE TABLE {TABLE_NAME} (
     "AvgW" FLOAT,
     "AvgL" FLOAT,
     "Gender" TEXT,
-    "TA_Match_Id" INTEGER DEFAULT NULL
+    "TA_Match_Id" INTEGER DEFAULT NULL,
+    "is_busted" TEXT DEFAULT NULL
 );
 """
 
-print(f"Creating or replacing table '{TABLE_NAME}' with MatchId and TA_Match_Id...")
+print(f"Creating or replacing table '{TABLE_NAME}' with Tournament_IOC column...")
 with engine.connect() as connection:
     connection.execute(text(create_table_query))
     connection.commit()  # Ensure table creation is committed
@@ -126,7 +137,6 @@ with engine.connect() as connection:
 # INSERT DATA INTO DATABASE
 # -------------------------
 print(f"Inserting data into '{TABLE_NAME}'...")
-# Insert data without MatchId ( SERIAL will auto-increment )
 df.to_sql(TABLE_NAME, engine, if_exists="append", index=False)
 print(f"Data successfully inserted into '{TABLE_NAME}'!")
 
@@ -139,6 +149,8 @@ with engine.connect() as connection:
     count = result.scalar()
     print(f"Total rows in '{TABLE_NAME}' table: {count}")
 
-    # Verify MatchId and TA_Match_Id
-    sample = connection.execute(text(f"SELECT \"MatchId\", \"TA_Match_Id\" FROM {TABLE_NAME} LIMIT 5")).fetchall()
-    print("Sample MatchId and TA_Match_Id values:", sample)
+    # Verify Tournament_IOC column
+    sample = connection.execute(text(f"SELECT \"Tournament\", \"Tournament_IOC\" FROM {TABLE_NAME} LIMIT 5")).fetchall()
+    print("Sample Tournament IOC mapping:", sample)
+
+print("✅ Data processing complete!")

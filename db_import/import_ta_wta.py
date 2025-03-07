@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, text
 # -------------------------
 # CONFIGURATION
 # -------------------------
-CSV_FILE = r"../spreadsheet_raw/TA_WTA_2015_2024.csv"
+CSV_FILE = r"spreadsheet_raw/TA_WTA_2015_2024.csv"
 DB_NAME = "tennis"
 DB_USER = "seanthompson"  # Change this if you're using a different user
 DB_PASS = ""  # If you have a PostgreSQL password, set it here
