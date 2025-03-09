@@ -75,35 +75,68 @@ def calculate_weighted_avg_elo_faced(player):
         weight *= decay_factor
     return weighted_sum / total_weight if total_weight > 0 else 0
 
+def calculate_log_surface_weighting(overall_elo, surface_elo, total_matches, surface_matches):
+    """Blend overall Elo and surface Elo using logarithmic weighting."""
+    if total_matches == 0:  # Prevent division by zero
+        return overall_elo
+    surface_weight = math.log(1 + surface_matches) / math.log(1 + total_matches)
+    return surface_weight * surface_elo + (1 - surface_weight) * overall_elo
+
 def update_elo(winner, loser, match_date, surface, comment):
     global player_ratings, player_last_match, player_surface_ratings, player_match_history
     if "Walkover" in str(comment):
         return
+    
+    # Get or create player ratings
     winner_rating, winner_surface_rating = get_or_create_player(winner, surface, match_date)
     loser_rating, loser_surface_rating = get_or_create_player(loser, surface, match_date)
+    
+    # Apply decay
     apply_rating_decay(winner, match_date)
     apply_rating_decay(loser, match_date)
+    
+    # Get current ratings
     winner_rating = player_ratings[winner]
     loser_rating = player_ratings[loser]
     winner_surface_rating = player_surface_ratings[surface][winner]
     loser_surface_rating = player_surface_ratings[surface][loser]
+    
+    # Calculate match counts for weighting
+    total_matches_winner = len(player_match_history[winner])
+    total_matches_loser = len(player_match_history[loser])
+    surface_matches_winner = sum(1 for match in player_match_history[winner] if match[2] == surface)
+    surface_matches_loser = sum(1 for match in player_match_history[loser] if match[2] == surface)
+    
+    # Calculate blended Elo ratings
+    winner_blended_elo = calculate_log_surface_weighting(
+        winner_rating, winner_surface_rating, total_matches_winner, surface_matches_winner
+    )
+    loser_blended_elo = calculate_log_surface_weighting(
+        loser_rating, loser_surface_rating, total_matches_loser, surface_matches_loser
+    )
+    
+    # Calculate K-factors
     K_factor_winner = calculate_dynamic_k(winner)
     K_factor_loser = calculate_dynamic_k(loser)
     if "Retired" in str(comment):
         K_factor_winner *= 0.5
         K_factor_loser *= 0.5
-    expected_winner = expected_score(winner_rating, loser_rating)
+    
+    # Calculate expected scores using blended ratings
+    expected_winner = expected_score(winner_blended_elo, loser_blended_elo)
     expected_loser = 1 - expected_winner
-    expected_winner_surface = expected_score(winner_surface_rating, loser_surface_rating)
-    expected_loser_surface = 1 - expected_winner_surface
+    
+    # Update both overall and surface ratings
     player_ratings[winner] += K_factor_winner * (1 - expected_winner)
     player_ratings[loser] += K_factor_loser * (0 - expected_loser)
-    player_surface_ratings[surface][winner] += K_factor_winner * (1 - expected_winner_surface)
-    player_surface_ratings[surface][loser] += K_factor_loser * (0 - expected_loser_surface)
+    player_surface_ratings[surface][winner] += K_factor_winner * (1 - expected_winner)
+    player_surface_ratings[surface][loser] += K_factor_loser * (0 - expected_loser)
+    
+    # Update match history
     player_last_match[winner] = match_date
     player_last_match[loser] = match_date
-    player_match_history[winner].append((loser, player_ratings[loser], match_date, 1))
-    player_match_history[loser].append((winner, player_ratings[winner], match_date, 0))
+    player_match_history[winner].append((loser, player_ratings[loser], surface, 1))
+    player_match_history[loser].append((winner, player_ratings[winner], surface, 0))
     player_match_history[winner] = player_match_history[winner][-MATCH_HISTORY_LIMIT:]
     player_match_history[loser] = player_match_history[loser][-MATCH_HISTORY_LIMIT:]
 
@@ -125,7 +158,7 @@ for player, rating in player_ratings.items():
     days_inactive = (today - last_played).days
     if days_inactive > REMOVAL_THRESHOLD_DAYS:
         continue
-    matches_last_6m = sum(1 for match in player_match_history[player] if match[2] > six_months_ago)
+    matches_last_6m = sum(1 for match in player_match_history[player] if isinstance(match[2], datetime) and match[2] > six_months_ago)
     career_matches = len(player_match_history[player])
     avg_elo_faced = calculate_weighted_avg_elo_faced(player)
     wins_vs_top20 = sum(1 for match in player_match_history[player] if match[1] >= 1800 and match[3] == 1)
