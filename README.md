@@ -39,7 +39,13 @@ Then upgrade pip
 
 Install python libraries used in the scripts:
 
-    pip3 install pandas sqlalchemy psycopg2-binary
+    pip3 install pandas sqlalchemy psycopg2-binary sklearn xgboost
+
+If this doesn't work you can also use brew to install those python libraries eg: brew install sklearn
+
+XGBoost requires this if on mac too:
+
+    brew install libomp
 
 Import data from the CSV files into the database.  Clone this repo, and run this command in the project home directory in terminal
 
@@ -48,6 +54,18 @@ Import data from the CSV files into the database.  Clone this repo, and run this
 Join the two data sources together
 
     python3 join_records_atp.py
+
+Create a separate database table with all the necessary data columns for the model
+
+    python3 create_atp_matches_table.py
+
+Populate the table with the analysis data calculations (ELO, fatigue, head-to-head, home advantage, serve break / hold, tie break performance etc..)
+
+    python3 create_analysis_data.py
+
+Create model feed data table - this transforms the analysis data into a form that the machine learning model can process
+
+    python3 create_data_feed_table.py
 
 ## What is happening
 
@@ -66,7 +84,8 @@ The ELO rating incorporates:
 - rating decay due to inactivity
 - decay from last played match up until the date the ratings are generated
 - The ELO compounds over the full period - there's no rolling window
-
+- Serve / Return strength adjustment
+- Adjustment for tie breaks to account for close matches
 
 
 
