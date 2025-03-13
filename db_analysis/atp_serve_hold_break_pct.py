@@ -27,6 +27,7 @@ with engine.connect() as conn:
                w_svgms, w_bpfaced, w_bpsaved, 
                l_svgms, l_bpfaced, l_bpsaved 
         FROM {TABLE_NAME}
+        ORDER BY date ASC, matchid ASC
     """, conn)
 
 # Convert Date column to datetime and sort matches chronologically
