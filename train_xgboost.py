@@ -122,28 +122,68 @@ test_df["model_prob_p2"] = 1 - y_pred_proba
 # Detect mispricing
 test_df["prob_diff_p1"] = test_df["model_prob_p1"] - test_df["implied_prob_p1"]
 test_df["prob_diff_p2"] = test_df["model_prob_p2"] - test_df["implied_prob_p2"]
-threshold = 0.1
-mispriced = test_df[
-    (test_df["prob_diff_p1"].abs() > threshold) | 
-    (test_df["prob_diff_p2"].abs() > threshold)
-]
 
-print(f"\nDetected {len(mispriced)} mispriced matches (threshold: {threshold}):")
-print(mispriced[["matchid", "player1_name", "player2_name", "model_prob_p1", 
-                 "implied_prob_p1", "prob_diff_p1", "target"]].head())
+# -------------------------
+# TUNE THRESHOLD AND SIMULATE BETTING PERFORMANCE
+# -------------------------
+print("\nSimulating betting performance across multiple thresholds...")
+thresholds = [0.05, 0.08, 0.1, 0.12, 0.15]
+results = []
 
-# Simulate betting performance
-test_df["bet_on_p1"] = test_df["prob_diff_p1"] > threshold
-test_df["bet_outcome"] = np.where(test_df["bet_on_p1"] & (test_df["target"] == 1), test_df["avgw"] - 1, 
-                                  np.where(test_df["bet_on_p1"] & (test_df["target"] == 0), -1, 0))
-num_bets = test_df["bet_on_p1"].sum()
-roi = test_df["bet_outcome"].sum() / num_bets if num_bets > 0 else 0
-print(f"\nSimulated {num_bets} bets on Player 1 (threshold: {threshold})")
-print(f"Simulated ROI: {roi:.4f}")
+for threshold in thresholds:
+    # Define bets
+    test_df["bet_on_p1"] = test_df["prob_diff_p1"] > threshold
+    test_df["bet_on_p2"] = test_df["prob_diff_p2"] > threshold
+    
+    # Calculate bet outcomes
+    test_df["bet_outcome"] = np.where(test_df["bet_on_p1"] & (test_df["target"] == 1), test_df["avgw"] - 1,
+                                      np.where(test_df["bet_on_p1"] & (test_df["target"] == 0), -1,
+                                               np.where(test_df["bet_on_p2"] & (test_df["target"] == 0), test_df["avgl"] - 1,
+                                                        np.where(test_df["bet_on_p2"] & (test_df["target"] == 1), -1, 0))))
+    
+    # Compute metrics
+    num_bets_p1 = test_df["bet_on_p1"].sum()
+    num_bets_p2 = test_df["bet_on_p2"].sum()
+    total_bets = test_df[["bet_on_p1", "bet_on_p2"]].any(axis=1).sum()
+    total_profit = test_df["bet_outcome"].sum()
+    roi = total_profit / total_bets if total_bets > 0 else 0
+    
+    # Mispriced matches for this threshold
+    mispriced = test_df[
+        (test_df["prob_diff_p1"].abs() > threshold) | 
+        (test_df["prob_diff_p2"].abs() > threshold)
+    ]
+    
+    results.append({
+        "Threshold": threshold,
+        "Total Bets": total_bets,
+        "Bets on P1": num_bets_p1,
+        "Bets on P2": num_bets_p2,
+        "ROI": roi,
+        "Mispriced Matches": len(mispriced)
+    })
+    
+    # Print detailed results for threshold 0.1 (original)
+    if threshold == 0.1:
+        print(f"\nDetailed results for threshold {threshold}:")
+        print(f"Detected {len(mispriced)} mispriced matches:")
+        print(mispriced[["matchid", "player1_name", "player2_name", "model_prob_p1", 
+                         "implied_prob_p1", "prob_diff_p1", "target"]].head())
+
+# Display threshold tuning results
+results_df = pd.DataFrame(results)
+print("\nThreshold Tuning Results:")
+print(results_df)
+
+# Select best threshold based on ROI
+best_threshold = results_df.loc[results_df["ROI"].idxmax()]
+print(f"\nBest Threshold: {best_threshold['Threshold']}")
+print(f"Total Bets: {best_threshold['Total Bets']} (P1: {best_threshold['Bets on P1']}, P2: {best_threshold['Bets on P2']})")
+print(f"Best ROI: {best_threshold['ROI']:.4f}")
 
 # -------------------------
 # SAVE RESULTS
 # -------------------------
 test_df.to_csv("model_predictions.csv", index=False)
-mispriced.to_csv("mispriced_matches.csv", index=False)
+mispriced.to_csv("mispriced_matches.csv", index=False)  # Saves the last threshold's mispriced matches
 print("Saved full predictions to 'model_predictions.csv' and mispriced matches to 'mispriced_matches.csv'")
