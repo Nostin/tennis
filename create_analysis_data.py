@@ -11,6 +11,7 @@ scripts = [
     "db_analysis/atp_rolling_win_pct.py",
     "db_analysis/atp_assess_fatigue.py",
     "db_analysis/atp_serve_hold_break_pct.py",
+    "db_analysis/atp_ace_dblfault_pct.py",
 ]
 
 for script in scripts:

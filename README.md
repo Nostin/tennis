@@ -29,43 +29,72 @@ It helps to have a Database GUI to pore through the records.  I like Beekeeper S
 
 ![Beekeeper Studio connection details](img/BeeKeeperStudioConn.png)
 
-## Python
+## 📌 Python Setup
 
+### 1️⃣ Install Python 3 (Mac)
     brew install python3
 
-Then upgrade pip
-
-    python3 -m pip install --upgrade pip
-
-Install python libraries used in the scripts:
-
-    pip3 install pandas sqlalchemy psycopg2-binary sklearn xgboost
-
-If this doesn't work you can also use brew to install those python libraries eg: brew install sklearn
-
-XGBoost requires this if on mac too:
-
+### 2️⃣ Install required dependency for XGBoost (Mac)
     brew install libomp
 
-Import data from the CSV files into the database.  Clone this repo, and run this command in the project home directory in terminal
+### 3️⃣ Create a virtual environment (Recommended)
+    python3 -m venv venv
 
-    python3 import_spreadsheet_data.py
+### 4️⃣ Activate virtual environment
+#### (Mac/Linux)
+    source venv/bin/activate
+#### (fish shell)
+    source venv/bin/activate.fish
+#### (Windows PowerShell)
+    venv\Scripts\Activate.ps1
+#### (Windows Command Prompt)
+    venv\Scripts\activate.bat
 
-Join the two data sources together
+### 5️⃣ Upgrade pip
+    pip install --upgrade pip
 
-    python3 join_records_atp.py
+### 6️⃣ Install required Python packages
+    pip install -r requirements.txt
 
-Create a separate database table with all the necessary data columns for the model
+> **💡 Alternative:** If `requirements.txt` is missing, install manually:
+> ```sh
+> pip install pandas sqlalchemy psycopg2-binary scikit-learn xgboost optuna pymc
+> ```
 
-    python3 create_atp_matches_table.py
+---
 
-Populate the table with the analysis data calculations (ELO, fatigue, head-to-head, home advantage, serve break / hold, tie break performance etc..)
+## 📌 Data Preparation
 
-    python3 create_analysis_data.py
+### 7️⃣ Import data from CSV files into the database
+    python import_spreadsheet_data.py
 
-Create model feed data table - this transforms the analysis data into a form that the machine learning model can process
+### 8️⃣ Join ATP match records
+    python join_records_atp.py
 
-    python3 create_data_feed_table.py
+### 9️⃣ Create structured table for model processing
+    python create_atp_matches_table.py
+
+### 🔟 Populate analysis table with computed features
+    python create_analysis_data.py
+
+### 1️⃣1️⃣ Create final model input dataset
+    python create_data_feed_table.py
+
+---
+
+## 📌 Model Training & Testing
+
+### 1️⃣2️⃣ Train the XGBoost Model
+    python train_xgboost.py
+
+> **💡 Note:** Does this save the model? If yes, where? If no, should we load a previous model instead?
+
+---
+
+✅ **Final Step:** Add `venv/` to `.gitignore`  
+    ```sh
+    echo "venv/" >> .gitignore
+    ```
 
 ## What is happening
 
