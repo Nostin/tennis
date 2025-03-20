@@ -1,4 +1,11 @@
 # tennis
+
+# Current Model Evaluation
+XGBoost:
+Accuracy: 0.6413
+Log Loss: 0.6227
+ROC-AUC: 0.7045
+
 ## Database
 
 Open Terminal
