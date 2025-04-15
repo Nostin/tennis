@@ -1,15 +1,14 @@
-import pandas as pd
-from sqlalchemy import create_engine, text
+import sys
+import os
 
-# -------------------------
-# CONFIGURATION
-# -------------------------
+# Add the project root directory to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+import pandas as pd
+from sqlalchemy import text
+from db_connect import get_engine
+
 CSV_FILE = r"spreadsheet_raw/TA_ATP_2015_2024.csv"
-DB_NAME = "tennis"
-DB_USER = "seanthompson"  # Change this if you're using a different user
-DB_PASS = ""  # If you have a PostgreSQL password, set it here
-DB_HOST = "localhost"
-DB_PORT = "5432"
 TABLE_NAME = "ta_atp_2015_2024"
 
 # -------------------------
@@ -66,7 +65,7 @@ print(f"Dates parsed and Gender column added. Final DataFrame rows: {len(df)}")
 # CONNECT TO POSTGRESQL
 # -------------------------
 print("Connecting to the database...")
-engine = create_engine(f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
+engine = get_engine()
 
 # -------------------------
 # CREATE TABLE WITH PRIMARY KEY

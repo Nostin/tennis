@@ -9,6 +9,8 @@ scripts = [
     "db_import/import_ta_atp.py",
     "db_import/import_td_wta.py",
     "db_import/import_ta_wta.py",
+    "db_import/bf_add_csv_record_ids.py",
+    "db_import/import_betfair_odds.py",
 ]
 
 for script in scripts:

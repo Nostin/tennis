@@ -1,21 +1,17 @@
+import sys
+import os
+
+# Add the project root directory to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
+from db_connect import get_engine
 
-# -------------------------
-# CONFIGURATION
-# -------------------------
-DB_NAME = "tennis"
-DB_USER = "seanthompson"
-DB_PASS = ""  # Add password if necessary
-DB_HOST = "localhost"
-DB_PORT = "5432"
+# Get the database engine
+engine = get_engine()
+
 TABLE_NAME = "matched_atp_records"
-
-# -------------------------
-# CONNECT TO POSTGRESQL
-# -------------------------
-print("Connecting to the database...")
-engine = create_engine(f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
 
 # -------------------------
 # CREATE TABLE (REPLACING EXISTING)
@@ -23,16 +19,16 @@ engine = create_engine(f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{D
 create_table_query = f"""
 DROP TABLE IF EXISTS {TABLE_NAME};
 CREATE TABLE {TABLE_NAME} (
-    MatchId INT PRIMARY KEY,
-    Tournament TEXT,
-    Tournament_IOC TEXT,
-    Date DATE,
-    AvgW FLOAT,
-    AvgL FLOAT,
-    Comment TEXT,
-    Surface TEXT,
-    Series TEXT,
-    Gender TEXT,
+    matchid INT PRIMARY KEY,
+    tournament TEXT,
+    tournament_ioc TEXT,
+    date DATE,
+    avgw FLOAT,
+    avgl FLOAT,
+    comment TEXT,
+    surface TEXT,
+    series TEXT,
+    gender TEXT,
     winner_name TEXT,
     loser_name TEXT,
     winner_ioc TEXT,
@@ -49,88 +45,16 @@ CREATE TABLE {TABLE_NAME} (
     l_svpt INT,
     w_1stin INT,
     l_1stin INT,
-    w_1stWon INT,
-    l_1stWon INT,
-    w_2ndWon INT,
-    l_2ndWon INT,
-    w_SvGms INT,
-    l_SvGms INT,
-    w_bpSaved INT,
-    l_bpSaved INT,
-    w_bpFaced INT,
-    l_bpFaced INT,
-    winner_days_since_last INT DEFAULT NULL,
-    loser_days_since_last INT DEFAULT NULL,
-    winner_recent_matches_30d INT DEFAULT 0,
-    loser_recent_matches_30d INT DEFAULT 0,
-    w_h2h_wins INT DEFAULT 0,
-    l_h2h_wins INT DEFAULT 0,
-    w_h2h_wins_clay INT DEFAULT 0,
-    l_h2h_wins_clay INT DEFAULT 0,
-    w_h2h_wins_grass INT DEFAULT 0,
-    l_h2h_wins_grass INT DEFAULT 0,
-    w_h2h_wins_hard INT DEFAULT 0,
-    l_h2h_wins_hard INT DEFAULT 0,
-    winner_fatigue NUMERIC(8,2) DEFAULT 0.00,
-    loser_fatigue NUMERIC(8,2) DEFAULT 0.00,
-    winner_win_pct_3m NUMERIC(5,2),
-    loser_win_pct_3m NUMERIC(5,2),
-    winner_win_pct_6m NUMERIC(5,2),
-    loser_win_pct_6m NUMERIC(5,2),
-    winner_hold_pct_total NUMERIC(5,2),
-    loser_hold_pct_total NUMERIC(5,2),
-    winner_hold_pct_roll NUMERIC(5,2),
-    loser_hold_pct_roll NUMERIC(5,2),
-    winner_break_pct_total NUMERIC(5,2),
-    winner_break_pct_roll NUMERIC(5,2),
-    loser_break_pct_total NUMERIC(5,2),
-    loser_break_pct_roll NUMERIC(5,2),
-    winner_hold_pct_total_hard NUMERIC(5,2),
-    loser_hold_pct_total_hard NUMERIC(5,2),
-    winner_hold_pct_roll_hard NUMERIC(5,2),
-    loser_hold_pct_roll_hard NUMERIC(5,2),
-    winner_break_pct_total_hard NUMERIC(5,2),
-    loser_break_pct_total_hard NUMERIC(5,2),
-    winner_break_pct_roll_hard NUMERIC(5,2),
-    loser_break_pct_roll_hard NUMERIC(5,2),
-    winner_hold_pct_total_grass NUMERIC(5,2),
-    loser_hold_pct_total_grass NUMERIC(5,2),
-    winner_hold_pct_roll_grass NUMERIC(5,2),
-    loser_hold_pct_roll_grass NUMERIC(5,2),
-    winner_break_pct_total_grass NUMERIC(5,2),
-    loser_break_pct_total_grass NUMERIC(5,2),
-    winner_break_pct_roll_grass NUMERIC(5,2),
-    loser_break_pct_roll_grass NUMERIC(5,2),
-    winner_hold_pct_total_clay NUMERIC(5,2),
-    loser_hold_pct_total_clay NUMERIC(5,2),
-    winner_hold_pct_roll_clay NUMERIC(5,2),
-    loser_hold_pct_roll_clay NUMERIC(5,2),
-    winner_break_pct_total_clay NUMERIC(5,2),
-    loser_break_pct_total_clay NUMERIC(5,2),
-    winner_break_pct_roll_clay NUMERIC(5,2),
-    loser_break_pct_roll_clay NUMERIC(5,2),
-    winner_tb_win_pct NUMERIC(5,2),
-    loser_tb_win_pct NUMERIC(5,2),
-    winner_ace_pct_3m NUMERIC(5,2),
-    loser_ace_pct_3m NUMERIC(5,2),
-    winner_df_pct_3m NUMERIC(5,2),
-    loser_df_pct_3m NUMERIC(5,2),
-    winner_first_serve_pct_3m NUMERIC(5,2),
-    loser_first_serve_pct_3m NUMERIC(5,2),
-    winner_first_serve_win_pct_3m NUMERIC(5,2),
-    loser_first_serve_win_pct_3m NUMERIC(5,2),
-    winner_second_serve_win_pct_3m NUMERIC(5,2),
-    loser_second_serve_win_pct_3m NUMERIC(5,2),
-    winner_bp_saved_pct_3m NUMERIC(5,2),
-    loser_bp_saved_pct_3m NUMERIC(5,2),
-    winner_overall_elo FLOAT,
-    winner_surface_elo FLOAT,
-    winner_total_matches INT,
-    winner_avg_elo_faced FLOAT,
-    loser_overall_elo FLOAT,
-    loser_surface_elo FLOAT,
-    loser_total_matches INT,
-    loser_avg_elo_faced FLOAT
+    w_1stwon INT,
+    l_1stwon INT,
+    w_2ndwon INT,
+    l_2ndwon INT,
+    w_svgms INT,
+    l_svgms INT,
+    w_bpsaved INT,
+    l_bpsaved INT,
+    w_bpfaced INT,
+    l_bpfaced INT
 );
 """
 print(f"Creating table '{TABLE_NAME}'...")
@@ -144,7 +68,7 @@ with engine.connect() as connection:
 # -------------------------
 insert_query = f"""
 INSERT INTO {TABLE_NAME} (
-    MatchId, Tournament, Tournament_IOC, Date, AvgW, AvgL, Comment, Surface, Series, Gender,
+    matchid, tournament, tournament_ioc, date, avgw, avgl, comment, surface, series, gender,
     winner_name, loser_name, winner_ioc, loser_ioc, winner_age, loser_age, score, minutes, 
     w_ace, l_ace, w_df, l_df, w_svpt, l_svpt,
     w_1stin, l_1stin, w_1stWon, l_1stWon, w_2ndWon, l_2ndWon,

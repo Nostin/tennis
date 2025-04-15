@@ -81,17 +81,20 @@ It helps to have a Database GUI to pore through the records.  I like Beekeeper S
 ### 9️⃣ Create structured table for model processing
     python create_atp_matches_table.py
 
-### 🔟 Populate analysis table with computed features
+### 🔟 Join ATP match records
+    python join_betfair_odds.py
+
+### 1️⃣1️⃣ Populate analysis table with computed features
     python create_analysis_data.py
 
-### 1️⃣1️⃣ Create final model input dataset
+### 1️⃣2️⃣ Create final model input dataset
     python create_data_feed_table.py
 
 ---
 
 ## 📌 Model Training & Testing
 
-### 1️⃣2️⃣ Train the XGBoost Model
+### 1️⃣3️⃣ Train the XGBoost Model
     python train_xgboost.py
 
 > **💡 Note:** Does this save the model? If yes, where? If no, should we load a previous model instead?
