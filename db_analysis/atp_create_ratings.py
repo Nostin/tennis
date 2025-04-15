@@ -6,7 +6,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pandas as pd
 import math
-from datetime import datetime, timedelta
 from sqlalchemy import text
 from db_connect import get_engine
 
@@ -102,6 +101,21 @@ def calculate_weighted_avg_elo_faced(player):
         weight *= decay_factor
     return round(weighted_sum / total_weight, 2) if total_weight > 0 else 0
 
+def calculate_surface_weighted_avg_elo_faced(player, surface):
+    """Compute weighted avg Elo faced on a given surface."""
+    if not player_match_history.get(player, []):
+        return 0
+    decay_factor = 0.9
+    weighted_sum = 0
+    total_weight = 0
+    weight = 1
+    recent_matches = [m for m in reversed(player_match_history[player]) if m[2] == surface][:50]
+    for match in recent_matches:
+        weighted_sum += match[1] * weight
+        total_weight += weight
+        weight *= decay_factor
+    return round(weighted_sum / total_weight, 2) if total_weight > 0 else 0
+
 def adjust_for_tie_breaks(winner_blended_elo, loser_blended_elo, tie_breaks):
     """Reduce Elo impact based on tie-break count and expected probability."""
     if tie_breaks == 0:
@@ -126,6 +140,46 @@ def calculate_hold_break_percent(w_SvGms, w_bpSaved, w_bpFaced, l_bpSaved, l_bpF
     hold_pct = (w_SvGms - w_bpFaced + w_bpSaved) / w_SvGms if w_SvGms > 0 else 0
     break_pct = (l_bpFaced - l_bpSaved) / l_SvGms if l_SvGms > 0 else 0
     return hold_pct, break_pct
+
+def reset_db_table_feature_columns():
+    """Add rating feature columns to the matched_atp_records table."""
+    with engine.connect() as conn:
+        # Drop existing columns if they exist
+        conn.execute(text("""
+            ALTER TABLE matched_atp_records              
+            DROP COLUMN IF EXISTS f_winner_overall_elo,
+            DROP COLUMN IF EXISTS f_winner_surface_elo,
+            DROP COLUMN IF EXISTS f_winner_total_matches,
+            DROP COLUMN IF EXISTS f_winner_avg_elo_faced,
+            DROP COLUMN IF EXISTS f_winner_avg_surface_elo_faced,
+            DROP COLUMN IF EXISTS f_loser_overall_elo,
+            DROP COLUMN IF EXISTS f_loser_surface_elo,
+            DROP COLUMN IF EXISTS f_loser_total_matches,
+            DROP COLUMN IF EXISTS f_loser_avg_elo_faced,
+            DROP COLUMN IF EXISTS f_loser_avg_surface_elo_faced;
+        """))
+        conn.commit()
+        
+        # Add new columns
+        conn.execute(text("""
+            ALTER TABLE matched_atp_records 
+            ADD COLUMN f_winner_overall_elo FLOAT,
+            ADD COLUMN f_winner_surface_elo FLOAT,
+            ADD COLUMN f_winner_total_matches INT,
+            ADD COLUMN f_winner_avg_elo_faced FLOAT,
+            ADD COLUMN f_winner_avg_surface_elo_faced FLOAT,
+            ADD COLUMN f_loser_overall_elo FLOAT,
+            ADD COLUMN f_loser_surface_elo FLOAT,
+            ADD COLUMN f_loser_total_matches INT,
+            ADD COLUMN f_loser_avg_elo_faced FLOAT,
+            ADD COLUMN f_loser_avg_surface_elo_faced FLOAT;
+        """))
+        conn.commit()
+
+# -------------------------
+# RESET DB TABLE COLUMNS (if needed)
+# -------------------------
+reset_db_table_feature_columns()
 
 # -------------------------
 # PROCESS MATCHES AND UPDATE ELO
@@ -177,6 +231,9 @@ for _, row in df_matches.iterrows():
     winner_avg_elo_faced = calculate_weighted_avg_elo_faced(winner)
     loser_avg_elo_faced = calculate_weighted_avg_elo_faced(loser)
 
+    winner_surface_avg_elo_faced = calculate_surface_weighted_avg_elo_faced(winner, surface)
+    loser_surface_avg_elo_faced = calculate_surface_weighted_avg_elo_faced(loser, surface)
+
     # Compute Serve/Return Strength
     winner_hold_pct, winner_break_pct = calculate_hold_break_percent(
         row["w_svgms"] if pd.notna(row["w_svgms"]) else 0,
@@ -219,10 +276,12 @@ for _, row in df_matches.iterrows():
         round(winner_surface_elo, 2),
         total_matches_winner,
         winner_avg_elo_faced,
+        winner_surface_avg_elo_faced,
         round(loser_overall_elo, 2),
         round(loser_surface_elo, 2),
         total_matches_loser,
-        loser_avg_elo_faced
+        loser_avg_elo_faced,
+        loser_surface_avg_elo_faced
     ))
 
     # Update ratings post-match
@@ -248,14 +307,16 @@ with engine.connect() as connection:
         query = text("""
             UPDATE matched_atp_records
             SET
-                winner_overall_elo = :w_elo,
-                winner_surface_elo = :w_s_elo,
-                winner_total_matches = :w_matches,
-                winner_avg_elo_faced = :w_avg_elo,
-                loser_overall_elo = :l_elo,
-                loser_surface_elo = :l_s_elo,
-                loser_total_matches = :l_matches,
-                loser_avg_elo_faced = :l_avg_elo
+                f_winner_overall_elo = :w_elo,
+                f_winner_surface_elo = :w_s_elo,
+                f_winner_total_matches = :w_matches,
+                f_winner_avg_elo_faced = :w_avg_elo,
+                f_winner_avg_surface_elo_faced = :w_avg_s_elo,
+                f_loser_overall_elo = :l_elo,
+                f_loser_surface_elo = :l_s_elo,
+                f_loser_total_matches = :l_matches,
+                f_loser_avg_elo_faced = :l_avg_elo,
+                f_loser_avg_surface_elo_faced = :l_avg_s_elo
             WHERE matchid = :match_id
         """)
         connection.execute(query, {
@@ -264,10 +325,12 @@ with engine.connect() as connection:
             "w_s_elo": match[2],
             "w_matches": match[3],
             "w_avg_elo": match[4],
-            "l_elo": match[5],
-            "l_s_elo": match[6],
-            "l_matches": match[7],
-            "l_avg_elo": match[8]
+            "w_avg_s_elo": match[5],
+            "l_elo": match[6],
+            "l_s_elo": match[7],
+            "l_matches": match[8],
+            "l_avg_elo": match[9],
+            "l_avg_s_elo": match[10]
         })
     connection.commit()
 
