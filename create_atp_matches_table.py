@@ -20,6 +20,7 @@ create_table_query = f"""
 DROP TABLE IF EXISTS {TABLE_NAME};
 CREATE TABLE {TABLE_NAME} (
     matchid INT PRIMARY KEY,
+    tourney_id VARCHAR(20),
     tournament TEXT,
     tournament_ioc TEXT,
     date DATE,
@@ -68,14 +69,14 @@ with engine.connect() as connection:
 # -------------------------
 insert_query = f"""
 INSERT INTO {TABLE_NAME} (
-    matchid, tournament, tournament_ioc, date, avgw, avgl, comment, surface, series, gender,
+    matchid, tourney_id, tournament, tournament_ioc, date, avgw, avgl, comment, surface, series, gender,
     winner_name, loser_name, winner_ioc, loser_ioc, winner_age, loser_age, score, minutes, 
     w_ace, l_ace, w_df, l_df, w_svpt, l_svpt,
     w_1stin, l_1stin, w_1stWon, l_1stWon, w_2ndWon, l_2ndWon,
     w_SvGms, l_SvGms, w_bpSaved, l_bpSaved, w_bpFaced, l_bpFaced
 )
 SELECT 
-    td."MatchId", td."Tournament", td."Tournament_IOC", td."Date", td."AvgW", td."AvgL", td."Comment", td."Surface", td."Series", td."Gender",
+    td."MatchId", ta.tourney_id, td."Tournament", td."Tournament_IOC", td."Date", td."AvgW", td."AvgL", td."Comment", td."Surface", td."Series", td."Gender",
     ta.winner_name, ta.loser_name, ta.winner_ioc, ta.loser_ioc, ta.winner_age, ta.loser_age, ta.score, ta.minutes, 
     ta.w_ace, ta.l_ace, ta.w_df, ta.l_df, ta.w_svpt, ta.l_svpt,
     ta."w_1stIn", ta."l_1stIn", ta."w_1stWon", ta."l_1stWon", ta."w_2ndWon", ta."l_2ndWon",

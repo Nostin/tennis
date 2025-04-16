@@ -7,9 +7,12 @@ print(f"Using Python interpreter: {sys.executable}")
 # List of scripts to run in order
 scripts = [
     "db_analysis/atp_create_ratings.py",
-    "db_analysis/atp_head_to_head.py",
+    "db_analysis/atp_tourney_fatigue.py",
+    "db_analysis/atp_head_to_head_record.py",
+
+    # "db_analysis/atp_head_to_head.py",
     "db_analysis/atp_rolling_win_pct.py",
-    "db_analysis/atp_assess_fatigue.py",
+    # "db_analysis/atp_assess_fatigue.py",
     "db_analysis/atp_serve_hold_break_pct.py",
     "db_analysis/atp_ace_dblfault_pct.py",
 ]

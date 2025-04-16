@@ -81,7 +81,7 @@ It helps to have a Database GUI to pore through the records.  I like Beekeeper S
 ### 9️⃣ Create structured table for model processing
     python create_atp_matches_table.py
 
-### 🔟 Join ATP match records
+### 🔟 Match Betfair odds intervals to matches
     python join_betfair_odds.py
 
 ### 1️⃣1️⃣ Populate analysis table with computed features
