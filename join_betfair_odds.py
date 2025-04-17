@@ -7,7 +7,8 @@ print(f"Using Python interpreter: {sys.executable}")
 # List of scripts to run in order
 scripts = [
     "db_match_records/atp_normalise_betfair_names.py",
-    "db_match_records/atp_exact_match_odds.py"
+    "db_match_records/atp_exact_match_odds.py",
+    "db_match_records/atp_final_match_odds.py"
 ]
 
 for script in scripts:

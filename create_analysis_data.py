@@ -9,6 +9,7 @@ scripts = [
     "db_analysis/atp_create_ratings.py",
     "db_analysis/atp_tourney_fatigue.py",
     "db_analysis/atp_head_to_head_record.py",
+    "db_analysis/atp_tie_break.py",
 
     # "db_analysis/atp_head_to_head.py",
     "db_analysis/atp_rolling_win_pct.py",
