@@ -13,6 +13,7 @@ from sklearn.metrics import accuracy_score, log_loss, roc_auc_score
 from sklearn.calibration import CalibratedClassifierCV
 from xgboost import XGBClassifier
 import warnings
+from sqlalchemy import text
 
 warnings.filterwarnings("ignore")
 
@@ -162,6 +163,36 @@ for week in weeks:
     X_train = pd.concat([X_train, X_test])
     y_train = pd.concat([y_train, y_test])
     model.fit(X_train, y_train)
+
+# -------------------------
+# SAVE PREDICTIONS TO DATABASE
+# -------------------------
+print("\n📦 Saving model probabilities to the database...")
+
+# Add predictions to the original dataframe to match matchid
+df_results = df[df["date"] >= "2024-01-01"].copy()
+df_results = df_results.reset_index(drop=True)
+
+# Ensure lengths match
+assert len(df_results) == len(total_y_pred_proba), "Mismatch in prediction length."
+
+# Assign probabilities and matchid (assumes matchid is in the table)
+df_results["model_prob_p1"] = total_y_pred_proba
+df_results["model_prob_p2"] = 1 - df_results["model_prob_p1"]
+
+# Subset to matchid and probabilities
+if "matchid" not in df_results.columns:
+    raise ValueError("matchid column missing from dataset. Ensure it's in your data feed.")
+
+df_to_save = df_results[["matchid", "model_prob_p1", "model_prob_p2"]]
+
+# Save to database
+with engine.begin() as conn:
+    conn.execute(text("DROP TABLE IF EXISTS xgboost_predictions CASCADE;"))
+    df_to_save.to_sql("xgboost_predictions", con=conn, index=False)
+
+print("✅ Saved predicted probabilities to table 'xgboost_predictions'")
+
 
 # -------------------------
 # FINAL MODEL EVALUATION
