@@ -1,7 +1,14 @@
+import sys
+import os
+
+# Add the project root directory to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from db_connect import get_engine
+
 import json
 import optuna
 import pandas as pd
-from sqlalchemy import create_engine
 from xgboost import XGBClassifier
 from sklearn.metrics import log_loss
 from sklearn.preprocessing import StandardScaler
@@ -9,33 +16,27 @@ from sklearn.preprocessing import StandardScaler
 # -------------------------
 # CONFIGURATION
 # -------------------------
-DB_NAME = "tennis"
-DB_USER = "seanthompson"
-DB_PASS = ""
-DB_HOST = "localhost"
-DB_PORT = "5432"
-TABLE_NAME = "model_data_feed"
+TABLE_NAME = "xgboost_data_feed"
 PARAMS_FILE = "best_xgboost_params.json"
 SCALER = StandardScaler()
 
 # Features list
 features = [
-    "elo_diff", "surface", "surface_elo_diff", "tournament_fatigue_diff", "h2h_wins_diff",
-    "win_pct_3m_diff", "dominance_roll_diff", "recent_matches_30d_diff",
-    "days_since_last_diff", "tournament_strength",
-    "ace_rate_3m_diff", "ace_rate_6m_diff", "df_rate_3m_diff", "df_rate_6m_diff",
-    "bpsaved_rate_3m_diff", "bpsaved_rate_6m_diff", "bpfaced_rate_3m_diff", "bpfaced_rate_6m_diff",
-    "first_serve_pct_3m_diff",
-    "first_serve_win_pct_3m_surface_diff", "second_serve_win_pct_3m_surface_diff",
-    "recent_form_6matches_diff", "avg_elo_faced_diff", "elo_first_serve_interaction",
-    "first_serve_win_pct_3m_diff", "second_serve_win_pct_3m_diff"
+    "elo_diff", "surface", "surface_elo_diff", "avg_elo_faced_diff", "avg_surface_elo_faced_diff",
+    "glicko_diff", "glicko_surface_diff", "p1_overall_rd", "p2_overall_rd", "p1_surface_rd", "p2_surface_rd",
+    "tournament_fatigue_diff", "h2h_wins_diff", "h2h_surface_wins_diff",
+    "win_pct_last_30d_diff", "recent_matches_30d_diff", "tournament_strength",
+    "hold_pct_diff", "hold_surface_pct_diff", "break_pct_diff", "break_surface_pct_diff",
+    "break_point_conversion_diff", "break_point_surface_conversion_diff",
+    "tiebreak_rate_diff", "tiebreak_win_diff", "tiebreak_surface_rate_diff",
+    "tiebreak_surface_win_diff", "home_adv_diff"
 ]
 
 # -------------------------
 # LOAD DATA FROM DATABASE
 # -------------------------
 print("Loading data from database...")
-engine = create_engine(f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
+engine = get_engine()
 with engine.connect() as conn:
     df = pd.read_sql(f"SELECT * FROM {TABLE_NAME} ORDER BY date ASC", conn)
 

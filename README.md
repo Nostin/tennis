@@ -1,10 +1,31 @@
 # tennis
 
 # Current Model Evaluation
-XGBoost:
-Accuracy: 0.6413
-Log Loss: 0.6227
-ROC-AUC: 0.7045
+XGBoost without Glicko:
+Total Accuracy: 0.6512
+Total Log Loss: 0.6232
+Total ROC-AUC Score: 0.7066
+
+With Glicko Ratings:
+Total Accuracy: 0.6448
+Total Log Loss: 0.6194
+Total ROC-AUC Score: 0.7106
+
+## 🔍 Feature Importance (Top 10 Features)
+
+| Rank | Feature                     | Importance | Description                                                |
+|------|-----------------------------|------------|------------------------------------------------------------|
+| 1    | `elo_diff`                  | 0.2438     | Elo rating difference – strongest predictor                |
+| 2    | `surface_elo_diff`          | 0.0811     | Elo difference adjusted for surface                        |
+| 3    | `avg_elo_faced_diff`        | 0.0759     | Strength of opponents faced                                |
+| 4    | `recent_matches_30d_diff`   | 0.0553     | Match volume over the past 30 days                         |
+| 5    | `tournament_strength`       | 0.0441     | Tournament level (e.g. Grand Slam, ATP 250, etc.)          |
+| 6    | `avg_surface_elo_faced_diff`| 0.0386     | Surface-specific strength of opponents faced               |
+| 7    | `tournament_fatigue_diff`   | 0.0384     | Relative fatigue from minutes played                       |
+| 8    | `h2h_wins_diff`             | 0.0370     | Overall head-to-head record                                |
+| 9    | `hold_surface_pct_diff`     | 0.0343     | Surface-adjusted hold-of-serve percentage difference       |
+| 10   | `win_pct_last_30d_diff`     | 0.0340     | Recent win percentage over last 30 days                    |
+
 
 ## Database
 

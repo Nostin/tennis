@@ -9,14 +9,17 @@ scripts = [
     "db_analysis/atp_create_ratings.py",
     "db_analysis/atp_tourney_fatigue.py",
     "db_analysis/atp_head_to_head_record.py",
-    "db_analysis/atp_tie_break.py",
     "db_analysis/atp_hold_break.py",
+    "db_analysis/atp_rolling_30d_win_pct.py",
+    "db_analysis/atp_tie_break.py",
+    "db_analysis/atp_home_adv.py",
+    "db_analysis/atp_glicko.py"
 
     # "db_analysis/atp_head_to_head.py",
-    "db_analysis/atp_rolling_win_pct.py",
+    # "db_analysis/atp_rolling_win_pct.py",
     # "db_analysis/atp_assess_fatigue.py",
     # "db_analysis/atp_serve_hold_break_pct.py",
-    "db_analysis/atp_ace_dblfault_pct.py",
+    # "db_analysis/atp_ace_dblfault_pct.py",
 ]
 
 for script in scripts:
