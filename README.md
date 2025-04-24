@@ -1,30 +1,41 @@
 # tennis
 
 # Current Model Evaluation
-XGBoost without Glicko:
-Total Accuracy: 0.6512
-Total Log Loss: 0.6232
-Total ROC-AUC Score: 0.7066
 
-With Glicko Ratings:
-Total Accuracy: 0.6448
-Total Log Loss: 0.6194
-Total ROC-AUC Score: 0.7106
+## ✅ Final Model Performance (With Odds Features)
 
-## 🔍 Feature Importance (Top 10 Features)
+| Metric           | Value   |
+|------------------|---------|
+| Accuracy         | 0.6732  |
+| Log Loss         | 0.5978  |
+| ROC-AUC Score    | 0.7395  |
 
-| Rank | Feature                     | Importance | Description                                                |
-|------|-----------------------------|------------|------------------------------------------------------------|
-| 1    | `elo_diff`                  | 0.2438     | Elo rating difference – strongest predictor                |
-| 2    | `surface_elo_diff`          | 0.0811     | Elo difference adjusted for surface                        |
-| 3    | `avg_elo_faced_diff`        | 0.0759     | Strength of opponents faced                                |
-| 4    | `recent_matches_30d_diff`   | 0.0553     | Match volume over the past 30 days                         |
-| 5    | `tournament_strength`       | 0.0441     | Tournament level (e.g. Grand Slam, ATP 250, etc.)          |
-| 6    | `avg_surface_elo_faced_diff`| 0.0386     | Surface-specific strength of opponents faced               |
-| 7    | `tournament_fatigue_diff`   | 0.0384     | Relative fatigue from minutes played                       |
-| 8    | `h2h_wins_diff`             | 0.0370     | Overall head-to-head record                                |
-| 9    | `hold_surface_pct_diff`     | 0.0343     | Surface-adjusted hold-of-serve percentage difference       |
-| 10   | `win_pct_last_30d_diff`     | 0.0340     | Recent win percentage over last 30 days                    |
+---
+
+## 📊 Feature Importance (Top 10 Features)
+
+| Rank | Feature                  | Importance |
+|------|--------------------------|------------|
+| 1    | p1_odds_shape_strength   | 0.090624   |
+| 2    | p2_odds_shape_strength   | 0.083602   |
+| 3    | glicko_diff              | 0.070858   |
+| 4    | p2_odds_shortened_fav    | 0.042230   |
+| 5    | p1_odds_shortened_fav    | 0.039770   |
+| 6    | elo_diff                 | 0.036690   |
+| 7    | glicko_surface_diff      | 0.035750   |
+| 8    | p1_odds_shape_flat       | 0.035682   |
+| 9    | p2_odds_shape_flat       | 0.026716   |
+| 10   | surface_elo_diff         | 0.019953   |
+
+---
+
+## 📉 XGBoost Historical Ratings Only (No Odds Features)
+
+| Metric           | Value   |
+|------------------|---------|
+| Accuracy         | 0.6448  |
+| Log Loss         | 0.6194  |
+| ROC-AUC Score    | 0.7106  |
 
 
 ## Database
@@ -116,7 +127,8 @@ It helps to have a Database GUI to pore through the records.  I like Beekeeper S
 ## 📌 Model Training & Testing
 
 ### 1️⃣3️⃣ Train the XGBoost Model
-    python train_xgboost.py
+    python get_hyperparameters.py
+    python xg_sensible.py
 
 > **💡 Note:** Does this save the model? If yes, where? If no, should we load a previous model instead?
 
@@ -126,6 +138,23 @@ It helps to have a Database GUI to pore through the records.  I like Beekeeper S
     ```sh
     echo "venv/" >> .gitignore
     ```
+
+## Incorporate the odds
+
+### 1️⃣ Shape the betfair data into features
+    python betfair_analysis.py
+
+### 2️⃣ Move odds features into the structured feature table
+    python create_odds_features.py
+
+### 3️⃣ Create separate data feed table for the model incorporating the odds
+    python create_data_feed_table_odds.py
+
+### 4️⃣ Calculate separate hyperparameters for the odds inclusive model
+    python get_odds_hyperparameters.py
+
+### 5️⃣ Train a model to incorporate market data into the historical model
+    python xg_sensible_odds.py
 
 ## What is happening
 
