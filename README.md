@@ -6,13 +6,13 @@
 
 | Metric           | Value   |
 |------------------|---------|
-| Accuracy         | 0.6732  |
+| Accuracy         | 67.32%  |
 | Log Loss         | 0.5978  |
 | ROC-AUC Score    | 0.7395  |
 
 ---
 
-## 📊 Feature Importance (Top 10 Features)
+## 📊 Feature Importance (Top Features)
 
 | Rank | Feature                  | Importance |
 |------|--------------------------|------------|
@@ -26,6 +26,11 @@
 | 8    | p1_odds_shape_flat       | 0.035682   |
 | 9    | p2_odds_shape_flat       | 0.026716   |
 | 10   | surface_elo_diff         | 0.019953   |
+| 11   | avg_elo_faced_diff       | 0.015919   |
+| 12   | p1_odds_shape_mixed      | 0.015676   |
+| 13   | tournament_strength      | 0.015612   |
+| 14   | recent_matches_30d_diff  | 0.015462   |
+| 15   | tournament_fatigue_diff  | 0.015231   |
 
 ---
 
@@ -33,7 +38,7 @@
 
 | Metric           | Value   |
 |------------------|---------|
-| Accuracy         | 0.6448  |
+| Accuracy         | 64.48%  |
 | Log Loss         | 0.6194  |
 | ROC-AUC Score    | 0.7106  |
 
