@@ -31,16 +31,16 @@ with engine.begin() as conn:
 
     conn.execute(text("""
         ALTER TABLE matched_atp_records
-        ADD COLUMN IF NOT EXISTS f_w_h2h_wins INT,
-        ADD COLUMN IF NOT EXISTS f_l_h2h_wins INT,
-        ADD COLUMN IF NOT EXISTS f_w_h2h_wins_clay INT,
-        ADD COLUMN IF NOT EXISTS f_l_h2h_wins_clay INT,
-        ADD COLUMN IF NOT EXISTS f_w_h2h_wins_grass INT,
-        ADD COLUMN IF NOT EXISTS f_l_h2h_wins_grass INT,
-        ADD COLUMN IF NOT EXISTS f_w_h2h_wins_hard INT,
-        ADD COLUMN IF NOT EXISTS f_l_h2h_wins_hard INT,
-        ADD COLUMN IF NOT EXISTS f_winner_recent_matches_30d INT,
-        ADD COLUMN IF NOT EXISTS f_loser_recent_matches_30d INT;
+        ADD COLUMN IF NOT EXISTS f_w_h2h_wins INT DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS f_l_h2h_wins INT DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS f_w_h2h_wins_clay INT DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS f_l_h2h_wins_clay INT DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS f_w_h2h_wins_grass INT DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS f_l_h2h_wins_grass INT DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS f_w_h2h_wins_hard INT DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS f_l_h2h_wins_hard INT DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS f_winner_recent_matches_30d INT DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS f_loser_recent_matches_30d INT DEFAULT 0;
     """))
 
 # -------------------------
