@@ -14,23 +14,23 @@
 
 ## 📊 Feature Importance (Top Features)
 
-| Rank | Feature                  | Importance |
-|------|--------------------------|------------|
-| 1    | p1_odds_shape_strength   | 0.090624   |
-| 2    | p2_odds_shape_strength   | 0.083602   |
-| 3    | glicko_diff              | 0.070858   |
-| 4    | p2_odds_shortened_fav    | 0.042230   |
-| 5    | p1_odds_shortened_fav    | 0.039770   |
-| 6    | elo_diff                 | 0.036690   |
-| 7    | glicko_surface_diff      | 0.035750   |
-| 8    | p1_odds_shape_flat       | 0.035682   |
-| 9    | p2_odds_shape_flat       | 0.026716   |
-| 10   | surface_elo_diff         | 0.019953   |
-| 11   | avg_elo_faced_diff       | 0.015919   |
-| 12   | p1_odds_shape_mixed      | 0.015676   |
-| 13   | tournament_strength      | 0.015612   |
-| 14   | recent_matches_30d_diff  | 0.015462   |
-| 15   | tournament_fatigue_diff  | 0.015231   |
+| Rank | Feature                  | Importance | Description |
+|------|---------------------------|------------|--------------------------------------------------------|
+| 1    | p1_odds_shape_strength     | 0.090624   | Strength of odds movement pattern                      |
+| 2    | p2_odds_shape_strength     | 0.083602   | Strength of odds movement pattern                      |
+| 3    | glicko_diff                | 0.070858   | Glicko rating difference                               |
+| 4    | p2_odds_shortened_fav      | 0.042230   | Player was favourite and odds shortened from open to close |
+| 5    | p1_odds_shortened_fav      | 0.039770   | Player was favourite and odds shortened from open to close |
+| 6    | elo_diff                   | 0.036690   | Elo rating difference                                  |
+| 7    | glicko_surface_diff        | 0.035750   | Glicko surface-specific rating difference              |
+| 8    | p1_odds_shape_flat         | 0.035682   | Odds didn't move significantly from open to close      |
+| 9    | p2_odds_shape_flat         | 0.026716   | Odds didn't move significantly from open to close      |
+| 10   | surface_elo_diff           | 0.019953   | Elo court surface rating difference                    |
+| 11   | avg_elo_faced_diff         | 0.015919   | Difference in average Elo of opponents faced           |
+| 12   | p1_odds_shape_mixed        | 0.015676   | Odds had mixed movement pattern                        |
+| 13   | tournament_strength        | 0.015612   | Grand Slam / Masters 1000 / ATP500 / ATP250 strength   |
+| 14   | recent_matches_30d_diff    | 0.015462   | Difference in recent match count (last 30 days)        |
+| 15   | tournament_fatigue_diff    | 0.015231   | Tournament fatigue difference (minutes played)         |
 
 ---
 
