@@ -12,8 +12,6 @@
 
 ---
 
-## 📊 Feature Importance (Top Features)
-
 ## 📊 Feature Importance (Top Features With Odds)
 
 | Rank | Feature                  | Importance | Description                                                  |
