@@ -92,13 +92,22 @@ try:
             # H2H keys (total and surface)
             h2h_key = frozenset([winner, loser])
             h2h_record = h2h_wins.setdefault(h2h_key, {winner: 0, loser: 0})
+            
+            # Get surface-specific records
             surf_record = h2h_surface_wins[surface].setdefault(h2h_key, {winner: 0, loser: 0})
+            hard_record = h2h_surface_wins["Hard"].setdefault(h2h_key, {winner: 0, loser: 0})
+            clay_record = h2h_surface_wins["Clay"].setdefault(h2h_key, {winner: 0, loser: 0})
+            grass_record = h2h_surface_wins["Grass"].setdefault(h2h_key, {winner: 0, loser: 0})
 
             # Pre-match counts
             w_h2h = h2h_record[winner]
             l_h2h = h2h_record[loser]
-            w_h2h_surf = surf_record[winner]
-            l_h2h_surf = surf_record[loser]
+            w_h2h_hard = hard_record[winner]
+            l_h2h_hard = hard_record[loser]
+            w_h2h_clay = clay_record[winner]
+            l_h2h_clay = clay_record[loser]
+            w_h2h_grass = grass_record[winner]
+            l_h2h_grass = grass_record[loser]
 
             # Update the DB row with pre-match stats
             conn.execute(text(f"""
@@ -106,8 +115,12 @@ try:
                 SET
                     f_w_h2h_wins = :w_h2h,
                     f_l_h2h_wins = :l_h2h,
-                    f_w_h2h_wins_{surface.lower()} = :w_h2h_surf,
-                    f_l_h2h_wins_{surface.lower()} = :l_h2h_surf,
+                    f_w_h2h_wins_hard = :w_h2h_hard,
+                    f_l_h2h_wins_hard = :l_h2h_hard,
+                    f_w_h2h_wins_clay = :w_h2h_clay,
+                    f_l_h2h_wins_clay = :l_h2h_clay,
+                    f_w_h2h_wins_grass = :w_h2h_grass,
+                    f_l_h2h_wins_grass = :l_h2h_grass,
                     f_winner_recent_matches_30d = :w_recent,
                     f_loser_recent_matches_30d = :l_recent
                 WHERE matchid = :matchid
@@ -115,8 +128,12 @@ try:
                 "matchid": matchid,
                 "w_h2h": w_h2h,
                 "l_h2h": l_h2h,
-                "w_h2h_surf": w_h2h_surf,
-                "l_h2h_surf": l_h2h_surf,
+                "w_h2h_hard": w_h2h_hard,
+                "l_h2h_hard": l_h2h_hard,
+                "w_h2h_clay": w_h2h_clay,
+                "l_h2h_clay": l_h2h_clay,
+                "w_h2h_grass": w_h2h_grass,
+                "l_h2h_grass": l_h2h_grass,
                 "w_recent": winner_recent,
                 "l_recent": loser_recent
             })

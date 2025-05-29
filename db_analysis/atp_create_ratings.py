@@ -44,6 +44,7 @@ player_ratings = {}
 player_surface_ratings = {surface: {} for surface in SURFACE_TYPES}
 player_last_match = {}
 player_match_history = {}
+player_surface_matches = {surface: {} for surface in SURFACE_TYPES}
 
 def get_or_create_player(player_name, surface, match_date):
     """Retrieve or initialize player's Elo ratings."""
@@ -51,6 +52,8 @@ def get_or_create_player(player_name, surface, match_date):
         player_ratings[player_name] = INITIAL_RATING
         player_last_match[player_name] = match_date
         player_match_history[player_name] = []
+        for s in SURFACE_TYPES:
+            player_surface_matches[s][player_name] = 0
     if player_name not in player_surface_ratings[surface]:
         player_surface_ratings[surface][player_name] = INITIAL_RATING
     return player_ratings[player_name], player_surface_ratings[surface][player_name]
@@ -150,11 +153,13 @@ def reset_db_table_feature_columns():
             DROP COLUMN IF EXISTS f_winner_overall_elo,
             DROP COLUMN IF EXISTS f_winner_surface_elo,
             DROP COLUMN IF EXISTS f_winner_total_matches,
+            DROP COLUMN IF EXISTS f_winner_total_surface_matches,
             DROP COLUMN IF EXISTS f_winner_avg_elo_faced,
             DROP COLUMN IF EXISTS f_winner_avg_surface_elo_faced,
             DROP COLUMN IF EXISTS f_loser_overall_elo,
             DROP COLUMN IF EXISTS f_loser_surface_elo,
             DROP COLUMN IF EXISTS f_loser_total_matches,
+            DROP COLUMN IF EXISTS f_loser_total_surface_matches,
             DROP COLUMN IF EXISTS f_loser_avg_elo_faced,
             DROP COLUMN IF EXISTS f_loser_avg_surface_elo_faced;
         """))
@@ -166,11 +171,13 @@ def reset_db_table_feature_columns():
             ADD COLUMN f_winner_overall_elo FLOAT,
             ADD COLUMN f_winner_surface_elo FLOAT,
             ADD COLUMN f_winner_total_matches INT,
+            ADD COLUMN f_winner_total_surface_matches INT,
             ADD COLUMN f_winner_avg_elo_faced FLOAT,
             ADD COLUMN f_winner_avg_surface_elo_faced FLOAT,
             ADD COLUMN f_loser_overall_elo FLOAT,
             ADD COLUMN f_loser_surface_elo FLOAT,
             ADD COLUMN f_loser_total_matches INT,
+            ADD COLUMN f_loser_total_surface_matches INT,
             ADD COLUMN f_loser_avg_elo_faced FLOAT,
             ADD COLUMN f_loser_avg_surface_elo_faced FLOAT;
         """))
@@ -218,6 +225,8 @@ for _, row in df_matches.iterrows():
     # Compute pre-match statistics
     total_matches_winner = len(player_match_history.get(winner, []))
     total_matches_loser = len(player_match_history.get(loser, []))
+    
+    # Get surface-specific match counts
     surface_matches_winner = sum(1 for match in player_match_history.get(winner, []) if match[2] == surface)
     surface_matches_loser = sum(1 for match in player_match_history.get(loser, []) if match[2] == surface)
 
@@ -275,11 +284,13 @@ for _, row in df_matches.iterrows():
         round(winner_overall_elo, 2),
         round(winner_surface_elo, 2),
         total_matches_winner,
+        surface_matches_winner,
         winner_avg_elo_faced,
         winner_surface_avg_elo_faced,
         round(loser_overall_elo, 2),
         round(loser_surface_elo, 2),
         total_matches_loser,
+        surface_matches_loser,
         loser_avg_elo_faced,
         loser_surface_avg_elo_faced
     ))
@@ -298,6 +309,10 @@ for _, row in df_matches.iterrows():
     player_match_history[winner] = player_match_history[winner][-MATCH_HISTORY_LIMIT:]
     player_match_history[loser] = player_match_history[loser][-MATCH_HISTORY_LIMIT:]
 
+    # Update surface match counts after the match
+    player_surface_matches[surface][winner] = player_surface_matches[surface].get(winner, 0) + 1
+    player_surface_matches[surface][loser] = player_surface_matches[surface].get(loser, 0) + 1
+
 # -------------------------
 # UPDATE DATABASE WITH PRE-MATCH ELO AND FEATURES
 # -------------------------
@@ -310,11 +325,13 @@ with engine.connect() as connection:
                 f_winner_overall_elo = :w_elo,
                 f_winner_surface_elo = :w_s_elo,
                 f_winner_total_matches = :w_matches,
+                f_winner_total_surface_matches = :w_surface_matches,
                 f_winner_avg_elo_faced = :w_avg_elo,
                 f_winner_avg_surface_elo_faced = :w_avg_s_elo,
                 f_loser_overall_elo = :l_elo,
                 f_loser_surface_elo = :l_s_elo,
                 f_loser_total_matches = :l_matches,
+                f_loser_total_surface_matches = :l_surface_matches,
                 f_loser_avg_elo_faced = :l_avg_elo,
                 f_loser_avg_surface_elo_faced = :l_avg_s_elo
             WHERE matchid = :match_id
@@ -324,13 +341,15 @@ with engine.connect() as connection:
             "w_elo": match[1],
             "w_s_elo": match[2],
             "w_matches": match[3],
-            "w_avg_elo": match[4],
-            "w_avg_s_elo": match[5],
-            "l_elo": match[6],
-            "l_s_elo": match[7],
-            "l_matches": match[8],
-            "l_avg_elo": match[9],
-            "l_avg_s_elo": match[10]
+            "w_surface_matches": match[4],
+            "w_avg_elo": match[5],
+            "w_avg_s_elo": match[6],
+            "l_elo": match[7],
+            "l_s_elo": match[8],
+            "l_matches": match[9],
+            "l_surface_matches": match[10],
+            "l_avg_elo": match[11],
+            "l_avg_s_elo": match[12]
         })
     connection.commit()
 

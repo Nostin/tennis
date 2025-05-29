@@ -138,90 +138,100 @@ with engine.connect() as conn:
     """), conn)
 
 df["date"] = pd.to_datetime(df["date"])
+
+# Store match history per player
 player_stats = {}
 
-def calc_features(player, current_date):
-    records = player_stats.get(player, [])
-    records = [r for r in records if r["date"] < current_date]
+def calculate_holds(svgms, bpfaced, bpsaved):
+    if pd.isna(svgms) or pd.isna(bpfaced) or pd.isna(bpsaved):
+        return 0
+    return int(svgms - (bpfaced - bpsaved))
 
-    def filter_records(condition):
-        return [r for r in records if condition(r)]
-
-    def compute_stats(filtered):
-        svgms = sum(r.get("svgms", 0) or 0 for r in filtered)
-        bpfaced = sum(r.get("bpfaced", 0) or 0 for r in filtered)
-        bpsaved = sum(r.get("bpsaved", 0) or 0 for r in filtered)
-        opp_bpfaced = sum(r.get("opp_bpfaced", 0) or 0 for r in filtered)
-        opp_bpsaved = sum(r.get("opp_bpsaved", 0) or 0 for r in filtered)
-
-        holds = svgms - bpfaced + bpsaved
-        breaks = opp_bpfaced - opp_bpsaved
-
-        holds = holds if pd.notna(holds) else 0
-        breaks = breaks if pd.notna(breaks) else 0
-
-        hold_pct = round((holds / svgms) * 100, 2) if svgms else 0
-        break_pct = round((breaks / (opp_bpfaced / 6)) * 100, 2) if opp_bpfaced else 0
-        bp_conv_pct = round((breaks / opp_bpfaced) * 100, 2) if opp_bpfaced else 0
-
-        return {
-            "holds": int(holds),
-            "breaks": int(breaks),
-            "hold_pct": hold_pct,
-            "break_pct": break_pct,
-            "bp_conversion_pct": bp_conv_pct
-        }
-
-
-    return {
-        "all": compute_stats(records),
-        "30d": compute_stats(filter_records(lambda r: (current_date - r["date"]).days <= 30)),
-        "hard": compute_stats(filter_records(lambda r: r["surface"] == "Hard")),
-        "clay": compute_stats(filter_records(lambda r: r["surface"] == "Clay")),
-        "grass": compute_stats(filter_records(lambda r: r["surface"] == "Grass")),
-    }
-
+def calculate_breaks(opp_bpfaced, opp_bpsaved):
+    if pd.isna(opp_bpfaced) or pd.isna(opp_bpsaved):
+        return 0
+    return int(opp_bpfaced - opp_bpsaved)
 
 def update_player(player, date, surface, svgms, bpfaced, bpsaved, opp_bpfaced, opp_bpsaved):
-    player_stats.setdefault(player, []).append({
-        "date": date,
-        "surface": surface,
-        "svgms": svgms or 0,
-        "bpfaced": bpfaced or 0,
-        "bpsaved": bpsaved or 0,
-        "opp_bpfaced": opp_bpfaced or 0,
-        "opp_bpsaved": opp_bpsaved or 0,
-    })
+    """
+    Update a player's stats with a new match.
+    Note: This should only be called AFTER the database has been updated with the current match's features.
+    """
+    if player not in player_stats:
+        player_stats[player] = {
+            "all": {"holds": 0, "breaks": 0, "svgms": 0, "opp_bpfaced": 0},
+            "30d": {"holds": 0, "breaks": 0, "svgms": 0, "opp_bpfaced": 0},
+            "hard": {"holds": 0, "breaks": 0, "svgms": 0, "opp_bpfaced": 0},
+            "clay": {"holds": 0, "breaks": 0, "svgms": 0, "opp_bpfaced": 0},
+            "grass": {"holds": 0, "breaks": 0, "svgms": 0, "opp_bpfaced": 0}
+        }
+    
+    # Calculate holds and breaks for this match
+    holds = calculate_holds(svgms, bpfaced, bpsaved)
+    breaks = calculate_breaks(opp_bpfaced, opp_bpsaved)
+    
+    # Update all-time stats
+    player_stats[player]["all"]["holds"] += holds
+    player_stats[player]["all"]["breaks"] += breaks
+    player_stats[player]["all"]["svgms"] += svgms if pd.notna(svgms) else 0
+    player_stats[player]["all"]["opp_bpfaced"] += opp_bpfaced if pd.notna(opp_bpfaced) else 0
+    
+    # Update surface-specific stats
+    surface_key = surface.lower()
+    if surface_key in ["hard", "clay", "grass"]:
+        player_stats[player][surface_key]["holds"] += holds
+        player_stats[player][surface_key]["breaks"] += breaks
+        player_stats[player][surface_key]["svgms"] += svgms if pd.notna(svgms) else 0
+        player_stats[player][surface_key]["opp_bpfaced"] += opp_bpfaced if pd.notna(opp_bpfaced) else 0
+    
+    # Update 30-day stats
+    thirty_days_ago = date - pd.Timedelta(days=30)
+    if date >= thirty_days_ago:
+        player_stats[player]["30d"]["holds"] += holds
+        player_stats[player]["30d"]["breaks"] += breaks
+        player_stats[player]["30d"]["svgms"] += svgms if pd.notna(svgms) else 0
+        player_stats[player]["30d"]["opp_bpfaced"] += opp_bpfaced if pd.notna(opp_bpfaced) else 0
 
-def safe_int(val):
-    try:
-        return int(val) if pd.notna(val) else 0
-    except:
-        return 0
+def calc_stats(stats):
+    if stats["svgms"] == 0:
+        return {
+            "total_holds": 0,
+            "total_breaks": 0,
+            "hold_pct": 0.0,
+            "break_pct": 0.0,
+            "bp_conversion_pct": 0.0
+        }
+    
+    hold_pct = round((stats["holds"] / stats["svgms"]) * 100, 2) if stats["svgms"] else 0.0
+    break_pct = round((stats["breaks"] / (stats["opp_bpfaced"] / 6)) * 100, 2) if stats["opp_bpfaced"] else 0.0
+    bp_conversion_pct = round((stats["breaks"] / stats["opp_bpfaced"]) * 100, 2) if stats["opp_bpfaced"] else 0.0
+    
+    return {
+        "total_holds": stats["holds"],
+        "total_breaks": stats["breaks"],
+        "hold_pct": hold_pct,
+        "break_pct": break_pct,
+        "bp_conversion_pct": bp_conversion_pct
+    }
 
-def safe_float(val):
-    try:
-        return float(val) if pd.notna(val) else 0.0
-    except:
-        return 0.0
-
-print("📤 Updating match records...")
+print("🛠️ Updating rows...")
 
 with engine.begin() as conn:
-    for _, row in df.iterrows():
+    for idx, row in df.iterrows():
         matchid = row["matchid"]
-        d = row["date"]
+        date = row["date"]
         surface = row["surface"]
         w = row["winner_name"]
         l = row["loser_name"]
-
-        w_stats = calc_features(w, d)
-        l_stats = calc_features(l, d)
-
+        
+        # Get current stats for both players (only includes previous matches)
+        w_stats = {k: calc_stats(player_stats.get(w, {}).get(k, {"holds": 0, "breaks": 0, "svgms": 0, "opp_bpfaced": 0})) for k in ["all", "30d", "hard", "clay", "grass"]}
+        l_stats = {k: calc_stats(player_stats.get(l, {}).get(k, {"holds": 0, "breaks": 0, "svgms": 0, "opp_bpfaced": 0})) for k in ["all", "30d", "hard", "clay", "grass"]}
+        
+        # Update database with current stats (before updating player stats)
         conn.execute(text(f"""
             UPDATE {TABLE_NAME}
             SET
-                -- Overall
                 f_w_total_holds = :f_w_total_holds,
                 f_w_total_breaks = :f_w_total_breaks,
                 f_w_hold_pct = :f_w_hold_pct,
@@ -232,8 +242,7 @@ with engine.begin() as conn:
                 f_l_hold_pct = :f_l_hold_pct,
                 f_l_break_pct = :f_l_break_pct,
                 f_l_bp_conversion_pct = :f_l_bp_conversion_pct,
-
-                -- 30 Day
+                
                 f_w_total_holds_30d = :f_w_total_holds_30d,
                 f_w_total_breaks_30d = :f_w_total_breaks_30d,
                 f_w_hold_pct_30d = :f_w_hold_pct_30d,
@@ -244,8 +253,7 @@ with engine.begin() as conn:
                 f_l_hold_pct_30d = :f_l_hold_pct_30d,
                 f_l_break_pct_30d = :f_l_break_pct_30d,
                 f_l_bp_conversion_pct_30d = :f_l_bp_conversion_pct_30d,
-
-                -- Hard
+                
                 f_w_total_holds_hard = :f_w_total_holds_hard,
                 f_w_total_breaks_hard = :f_w_total_breaks_hard,
                 f_w_hold_pct_hard = :f_w_hold_pct_hard,
@@ -256,8 +264,7 @@ with engine.begin() as conn:
                 f_l_hold_pct_hard = :f_l_hold_pct_hard,
                 f_l_break_pct_hard = :f_l_break_pct_hard,
                 f_l_bp_conversion_pct_hard = :f_l_bp_conversion_pct_hard,
-
-                -- Clay
+                
                 f_w_total_holds_clay = :f_w_total_holds_clay,
                 f_w_total_breaks_clay = :f_w_total_breaks_clay,
                 f_w_hold_pct_clay = :f_w_hold_pct_clay,
@@ -268,8 +275,7 @@ with engine.begin() as conn:
                 f_l_hold_pct_clay = :f_l_hold_pct_clay,
                 f_l_break_pct_clay = :f_l_break_pct_clay,
                 f_l_bp_conversion_pct_clay = :f_l_bp_conversion_pct_clay,
-
-                -- Grass
+                
                 f_w_total_holds_grass = :f_w_total_holds_grass,
                 f_w_total_breaks_grass = :f_w_total_breaks_grass,
                 f_w_hold_pct_grass = :f_w_hold_pct_grass,
@@ -282,69 +288,26 @@ with engine.begin() as conn:
                 f_l_bp_conversion_pct_grass = :f_l_bp_conversion_pct_grass
             WHERE matchid = :matchid
         """), {
-            "matchid": int(matchid),
-            # Overall
-            "f_w_total_holds": safe_int(w_stats["all"]["holds"]),
-            "f_w_total_breaks": safe_int(w_stats["all"]["breaks"]),
-            "f_w_hold_pct": safe_float(w_stats["all"]["hold_pct"]),
-            "f_w_break_pct": safe_float(w_stats["all"]["break_pct"]),
-            "f_w_bp_conversion_pct": safe_float(w_stats["all"]["bp_conversion_pct"]),
-            "f_l_total_holds": safe_int(l_stats["all"]["holds"]),
-            "f_l_total_breaks": safe_int(l_stats["all"]["breaks"]),
-            "f_l_hold_pct": safe_float(l_stats["all"]["hold_pct"]),
-            "f_l_break_pct": safe_float(l_stats["all"]["break_pct"]),
-            "f_l_bp_conversion_pct": safe_float(l_stats["all"]["bp_conversion_pct"]),
-            # 30 Day
-            "f_w_total_holds_30d": safe_int(w_stats["30d"]["holds"]),
-            "f_w_total_breaks_30d": safe_int(w_stats["30d"]["breaks"]),
-            "f_w_hold_pct_30d": safe_float(w_stats["30d"]["hold_pct"]),
-            "f_w_break_pct_30d": safe_float(w_stats["30d"]["break_pct"]),
-            "f_w_bp_conversion_pct_30d": safe_float(w_stats["30d"]["bp_conversion_pct"]),
-            "f_l_total_holds_30d": safe_int(l_stats["30d"]["holds"]),
-            "f_l_total_breaks_30d": safe_int(l_stats["30d"]["breaks"]),
-            "f_l_hold_pct_30d": safe_float(l_stats["30d"]["hold_pct"]),
-            "f_l_break_pct_30d": safe_float(l_stats["30d"]["break_pct"]),
-            "f_l_bp_conversion_pct_30d": safe_float(l_stats["30d"]["bp_conversion_pct"]),
-            # Hard
-            "f_w_total_holds_hard": safe_int(w_stats["hard"]["holds"]),
-            "f_w_total_breaks_hard": safe_int(w_stats["hard"]["breaks"]),
-            "f_w_hold_pct_hard": safe_float(w_stats["hard"]["hold_pct"]),
-            "f_w_break_pct_hard": safe_float(w_stats["hard"]["break_pct"]),
-            "f_w_bp_conversion_pct_hard": safe_float(w_stats["hard"]["bp_conversion_pct"]),
-            "f_l_total_holds_hard": safe_int(l_stats["hard"]["holds"]),
-            "f_l_total_breaks_hard": safe_int(l_stats["hard"]["breaks"]),
-            "f_l_hold_pct_hard": safe_float(l_stats["hard"]["hold_pct"]),
-            "f_l_break_pct_hard": safe_float(l_stats["hard"]["break_pct"]),
-            "f_l_bp_conversion_pct_hard": safe_float(l_stats["hard"]["bp_conversion_pct"]),
-            # Clay
-            "f_w_total_holds_clay": safe_int(w_stats["clay"]["holds"]),
-            "f_w_total_breaks_clay": safe_int(w_stats["clay"]["breaks"]),
-            "f_w_hold_pct_clay": safe_float(w_stats["clay"]["hold_pct"]),
-            "f_w_break_pct_clay": safe_float(w_stats["clay"]["break_pct"]),
-            "f_w_bp_conversion_pct_clay": safe_float(w_stats["clay"]["bp_conversion_pct"]),
-            "f_l_total_holds_clay": safe_int(l_stats["clay"]["holds"]),
-            "f_l_total_breaks_clay": safe_int(l_stats["clay"]["breaks"]),
-            "f_l_hold_pct_clay": safe_float(l_stats["clay"]["hold_pct"]),
-            "f_l_break_pct_clay": safe_float(l_stats["clay"]["break_pct"]),
-            "f_l_bp_conversion_pct_clay": safe_float(l_stats["clay"]["bp_conversion_pct"]),
-            # Grass
-            "f_w_total_holds_grass": safe_int(w_stats["grass"]["holds"]),
-            "f_w_total_breaks_grass": safe_int(w_stats["grass"]["breaks"]),
-            "f_w_hold_pct_grass": safe_float(w_stats["grass"]["hold_pct"]),
-            "f_w_break_pct_grass": safe_float(w_stats["grass"]["break_pct"]),
-            "f_w_bp_conversion_pct_grass": safe_float(w_stats["grass"]["bp_conversion_pct"]),
-            "f_l_total_holds_grass": safe_int(l_stats["grass"]["holds"]),
-            "f_l_total_breaks_grass": safe_int(l_stats["grass"]["breaks"]),
-            "f_l_hold_pct_grass": safe_float(l_stats["grass"]["hold_pct"]),
-            "f_l_break_pct_grass": safe_float(l_stats["grass"]["break_pct"]),
-            "f_l_bp_conversion_pct_grass": safe_float(l_stats["grass"]["bp_conversion_pct"]),
+            "matchid": matchid,
+            # all
+            **{f"f_w_{k}": w_stats["all"][k] for k in ["total_holds", "total_breaks", "hold_pct", "break_pct", "bp_conversion_pct"]},
+            **{f"f_l_{k}": l_stats["all"][k] for k in ["total_holds", "total_breaks", "hold_pct", "break_pct", "bp_conversion_pct"]},
+            # 30d
+            **{f"f_w_{k}_30d": w_stats["30d"][k] for k in ["total_holds", "total_breaks", "hold_pct", "break_pct", "bp_conversion_pct"]},
+            **{f"f_l_{k}_30d": l_stats["30d"][k] for k in ["total_holds", "total_breaks", "hold_pct", "break_pct", "bp_conversion_pct"]},
+            # hard
+            **{f"f_w_{k}_hard": w_stats["hard"][k] for k in ["total_holds", "total_breaks", "hold_pct", "break_pct", "bp_conversion_pct"]},
+            **{f"f_l_{k}_hard": l_stats["hard"][k] for k in ["total_holds", "total_breaks", "hold_pct", "break_pct", "bp_conversion_pct"]},
+            # clay
+            **{f"f_w_{k}_clay": w_stats["clay"][k] for k in ["total_holds", "total_breaks", "hold_pct", "break_pct", "bp_conversion_pct"]},
+            **{f"f_l_{k}_clay": l_stats["clay"][k] for k in ["total_holds", "total_breaks", "hold_pct", "break_pct", "bp_conversion_pct"]},
+            # grass
+            **{f"f_w_{k}_grass": w_stats["grass"][k] for k in ["total_holds", "total_breaks", "hold_pct", "break_pct", "bp_conversion_pct"]},
+            **{f"f_l_{k}_grass": l_stats["grass"][k] for k in ["total_holds", "total_breaks", "hold_pct", "break_pct", "bp_conversion_pct"]},
         })
-
-        update_player(w, d, surface,
-                      row["w_svgms"], row["w_bpfaced"], row["w_bpsaved"],
-                      row["l_bpfaced"], row["l_bpsaved"])
-        update_player(l, d, surface,
-                      row["l_svgms"], row["l_bpfaced"], row["l_bpsaved"],
-                      row["w_bpfaced"], row["w_bpsaved"])
+        
+        # Only after updating the database, update player stats for future matches
+        update_player(w, date, surface, row["w_svgms"], row["w_bpfaced"], row["w_bpsaved"], row["l_bpfaced"], row["l_bpsaved"])
+        update_player(l, date, surface, row["l_svgms"], row["l_bpfaced"], row["l_bpsaved"], row["w_bpfaced"], row["w_bpsaved"])
 
 print("✅ Done.")
